@@ -1,0 +1,25 @@
+# Local agent and IDE state
+.agents/
+.claude/
+.vscode/
+skills-lock.json
+
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+
+# Java / Maven build output
+backend/target/
+
+# Node dependencies and frontend build output
+frontend/node_modules/
+frontend/.next/
+frontend/.next-*/
+frontend/out/
+frontend/build/
+frontend/coverage/
+frontend/tsconfig.tsbuildinfo
+
+# Logs
+*.log

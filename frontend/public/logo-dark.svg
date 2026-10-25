@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 128" fill="none">
+  <g stroke="#CCCCCC" stroke-linecap="round" stroke-linejoin="round" stroke-width="6">
+    <path d="M18 25h44v79H18z"/>
+    <path d="M30 25v-8h20v8"/>
+    <path d="M6 66h68"/>
+    <path d="M3 55v22M13 49v34M67 49v34M77 55v22"/>
+  </g>
+  <path d="M27 42h26M27 91h26" stroke="#FFFFFF" stroke-linecap="round" stroke-width="4"/>
+  <text x="94" y="91" fill="#FFFFFF" font-family="Teko, Impact, sans-serif" font-size="72" font-weight="700" letter-spacing="2">GYMNOTES</text>
+</svg>

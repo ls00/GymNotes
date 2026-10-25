@@ -1,0 +1,48 @@
+{
+  "name": "GYMNOTES - Workout & Nutrition Tracker",
+  "short_name": "GymNotes",
+  "description": "Seu diário definitivo de treinos, evolução de cargas, nutrição e comunidade fitness.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1C1C1C",
+  "theme_color": "#1C1C1C",
+  "scope": "/",
+  "categories": ["fitness", "health", "lifestyle", "social"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Iniciar Treino",
+      "short_name": "Treino",
+      "description": "Comece a registrar sua sessão de treino agora",
+      "url": "/workouts/active",
+      "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Registrar Refeição",
+      "short_name": "Nutrição",
+      "description": "Adicione alimentos e consulte seus macros diários",
+      "url": "/nutrition/log",
+      "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}
