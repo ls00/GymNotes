@@ -21,6 +21,10 @@ O **GYMNOTES** é um diário digital de treino e nutrição feito para tornar o
 acompanhamento da sua rotina mais simples. Registre seu trabalho, consulte seus
 dados e tenha as informações importantes à mão — no computador ou no celular.
 
+## Conheça o GymNotes
+
+![Apresentação animada do GymNotes, com transições entre os slides do produto](./gymnotes-slides/gymnotes-apresentacao.gif)
+
 ## Por dentro do produto
 
 <table>
