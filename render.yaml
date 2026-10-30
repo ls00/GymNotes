@@ -1,0 +1,81 @@
+previews:
+  generation: off
+
+services:
+  - type: web
+    name: gymnotes-api
+    runtime: docker
+    region: virginia
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    autoDeployTrigger: commit
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DB_HOST
+        fromDatabase:
+          name: gymnotes-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: gymnotes-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: gymnotes-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: gymnotes-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: gymnotes-db
+          property: password
+      - key: REDIS_URL
+        fromService:
+          name: gymnotes-cache
+          type: keyvalue
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        fromService:
+          name: gymnotes-frontend
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+
+  - type: web
+    name: gymnotes-frontend
+    runtime: node
+    region: virginia
+    plan: free
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 24.17.0
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: gymnotes-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+
+  - type: keyvalue
+    name: gymnotes-cache
+    region: virginia
+    plan: free
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+    persistenceMode: off
+
+databases:
+  - name: gymnotes-db
+    databaseName: gymnotes_db
+    user: gymnotes_user
+    region: virginia
+    plan: free
+    ipAllowList: []

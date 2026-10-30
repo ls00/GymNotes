@@ -18,7 +18,7 @@ const teko = Teko({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#1C1C1C",
+  themeColor: "#101010",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -56,7 +56,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`dark ${inter.variable} ${teko.variable}`}>
-      <body className="min-h-screen bg-background font-sans text-white antialiased selection:bg-white selection:text-[#1C1C1C]">
+      <body className="min-h-screen bg-background font-sans text-white antialiased selection:bg-brand selection:text-rich">
         <QueryProvider>
           <main className="relative flex min-h-screen flex-col">
             {children}

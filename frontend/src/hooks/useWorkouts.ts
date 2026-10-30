@@ -5,6 +5,7 @@ import { api } from "@/services/api";
 import {
   CreateWorkoutPlan,
   CreateWorkoutSession,
+  Exercise,
   ExerciseProgress,
   WorkoutPlan,
   WorkoutSessionResponse,
@@ -21,6 +22,18 @@ export function useWorkouts() {
         const response = await api.get<WorkoutPlan[]>("/workouts/plans");
         return response.data;
       },
+    });
+
+  const useSearchExercises = (query: string) =>
+    useQuery<Exercise[]>({
+      queryKey: ["workouts", "exercises", query],
+      queryFn: async () => {
+        const response = await api.get<{ content: Exercise[] }>(
+          `/workouts/exercises/search?q=${encodeURIComponent(query)}`
+        );
+        return response.data.content;
+      },
+      staleTime: 1000 * 60 * 5,
     });
 
   // Criar ficha de treino
@@ -72,10 +85,10 @@ export function useWorkouts() {
 
   return {
     usePlans,
+    useSearchExercises,
     useCreatePlan,
     useSessionHistory,
     useCreateSession,
     useExerciseProgress,
   };
 }
-

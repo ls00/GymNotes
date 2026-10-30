@@ -3,6 +3,7 @@ export interface UserSummary {
   id: string;
   name: string;
   email: string;
+  role?: "USER" | "SUPER_ADMIN";
   profilePictureUrl?: string | null;
   bio?: string | null;
   targetObjective?: string | null;
@@ -44,6 +45,13 @@ export interface WorkoutPlan {
 export interface CreateWorkoutPlan {
   name: string;
   description?: string;
+}
+
+export interface Exercise {
+  id: string;
+  name: string;
+  muscleGroup: string;
+  equipment?: string | null;
 }
 
 export interface WorkoutSet {

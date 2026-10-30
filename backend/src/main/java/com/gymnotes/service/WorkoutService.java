@@ -15,6 +15,8 @@ import com.gymnotes.repository.WorkoutSetRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
 import java.util.List;
@@ -51,6 +53,15 @@ public class WorkoutService {
                 .stream()
                 .map(WorkoutPlanDTO::fromEntity)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ExerciseDTO> searchExercises(String query, Pageable pageable) {
+        String searchQuery = query != null ? query.trim() : "";
+        Page<Exercise> exercises = searchQuery.isEmpty()
+                ? exerciseRepository.findAll(pageable)
+                : exerciseRepository.findByNameContainingIgnoreCase(searchQuery, pageable);
+        return exercises.map(ExerciseDTO::fromEntity);
     }
 
     @Transactional
@@ -125,4 +136,3 @@ public class WorkoutService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com o ID: " + userId));
     }
 }
-

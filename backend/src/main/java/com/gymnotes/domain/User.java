@@ -1,6 +1,7 @@
 package com.gymnotes.domain;
 
 import jakarta.persistence.*;
+import com.gymnotes.domain.enums.UserRole;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -29,6 +30,11 @@ public class User {
 
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 30)
+    private UserRole role = UserRole.USER;
 
     @Column(name = "profile_picture_url", length = 500)
     private String profilePictureUrl;
@@ -63,4 +69,3 @@ public class User {
         this.updatedAt = Instant.now();
     }
 }
-

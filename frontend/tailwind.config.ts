@@ -10,18 +10,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#1C1C1C",
-        rich: "#1C1C1C",
-        surface: "#1C1C1C",
+        background: "#101010",
+        rich: "#1A1A1A",
+        surface: "#1A1A1A",
+        muted: "#A3A3A3",
         brand: {
-          DEFAULT: "#FFFFFF",
-          muted: "#CCCCCC",
-          line: "#5C5C5C",
+          DEFAULT: "#F5F5F5",
+          muted: "#D4D4D4",
+          line: "#3A3A3A",
         },
         border: {
-          DEFAULT: "#5C5C5C",
-          subtle: "#5C5C5C",
-          active: "#FFFFFF",
+          DEFAULT: "#3A3A3A",
+          subtle: "#2A2A2A",
+          active: "#F5F5F5",
         },
       },
       fontFamily: {

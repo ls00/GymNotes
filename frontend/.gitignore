@@ -1,0 +1,43 @@
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+
+# Next.js / Node output
+.next/
+.next-*/
+node_modules/
+out/
+build/
+coverage/
+tsconfig.tsbuildinfo
+
+# IDE state
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Terraform state
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# Local container data
+volumes/
+docker-volumes/
+docker-data/

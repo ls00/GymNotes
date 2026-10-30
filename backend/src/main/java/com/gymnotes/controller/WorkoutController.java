@@ -10,6 +10,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,6 +44,14 @@ public class WorkoutController {
         return ResponseEntity.ok(plans);
     }
 
+    @GetMapping("/exercises/search")
+    @Operation(summary = "Buscar exercícios", description = "Retorna o catálogo de exercícios para registrar séries.")
+    public ResponseEntity<Page<ExerciseDTO>> searchExercises(
+            @RequestParam(name = "q", defaultValue = "") String query,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(workoutService.searchExercises(query, pageable));
+    }
+
     @PostMapping("/sessions")
     @Operation(summary = "Registrar sessão de treino", description = "Salva uma sessão de treino completa com suas séries, repetições, cargas e RPE.")
     public ResponseEntity<WorkoutSessionResponseDTO> createSession(
@@ -67,4 +78,3 @@ public class WorkoutController {
         return ResponseEntity.ok(progress);
     }
 }
-

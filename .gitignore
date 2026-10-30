@@ -2,6 +2,8 @@
 .agents/
 .claude/
 .vscode/
+**/.vscode/
+**/.idea/
 skills-lock.json
 
 # Environment variables and local secrets
@@ -9,17 +11,40 @@ skills-lock.json
 .env.*
 !.env.example
 
-# Java / Maven build output
-backend/target/
-
-# Node dependencies and frontend build output
-frontend/node_modules/
-frontend/.next/
-frontend/.next-*/
-frontend/out/
-frontend/build/
-frontend/coverage/
-frontend/tsconfig.tsbuildinfo
+# Build output and dependencies
+**/target/
+**/node_modules/
+**/.next/
+**/.next-*/
+**/out/
+**/build/
+**/coverage/
+**/tsconfig.tsbuildinfo
 
 # Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Terraform state and variable files
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# Local Docker volumes and bind-mounted data
+**/volumes/
+**/docker-volumes/
+**/docker-data/
+**/postgres_data/
+**/redis_data/

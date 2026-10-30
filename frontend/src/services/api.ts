@@ -1,6 +1,9 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+const configuredApiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
+const API_BASE_URL = configuredApiUrl.endsWith("/api/v1")
+  ? configuredApiUrl
+  : `${configuredApiUrl}/api/v1`;
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -28,35 +31,18 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const requestUrl = error.config?.url ?? "";
+    const isAuthRequest = /\/auth\/(login|register)$/.test(requestUrl);
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      if (typeof window !== "undefined") {
-        const refreshToken = localStorage.getItem("gymnotes_refresh_token");
-
-        if (refreshToken) {
-          try {
-            // Em caso de suporte a renovação de tokens
-            // Limpa dados caso a renovação não tenha sido implementada ou falhe
-            localStorage.removeItem("gymnotes_token");
-            localStorage.removeItem("gymnotes_refresh_token");
-            localStorage.removeItem("gymnotes_user");
-            window.location.href = "/login";
-          } catch {
-            localStorage.removeItem("gymnotes_token");
-            localStorage.removeItem("gymnotes_refresh_token");
-            window.location.href = "/login";
-          }
-        } else {
-          localStorage.removeItem("gymnotes_token");
-          localStorage.removeItem("gymnotes_user");
-        }
+    if (error.response?.status === 401 && !isAuthRequest && typeof window !== "undefined") {
+      localStorage.removeItem("gymnotes_token");
+      localStorage.removeItem("gymnotes_refresh_token");
+      localStorage.removeItem("gymnotes_user");
+      if (window.location.pathname !== "/login") {
+        window.location.replace("/login");
       }
     }
 
     return Promise.reject(error);
   }
 );
-

@@ -16,6 +16,7 @@ import com.gymnotes.repository.UserRepository;
 import com.gymnotes.repository.WorkoutSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.AccessDeniedException;
@@ -30,6 +31,8 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 public class SocialService {
+
+    private record FeedActivity(Instant createdAt, WorkoutSession workoutSession, MealLog mealLog) {}
 
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
@@ -116,78 +119,89 @@ public class SocialService {
         List<UUID> visibleUserIds = new ArrayList<>(friendshipRepository.findAcceptedFriendIds(userId));
         visibleUserIds.add(userId);
 
-        List<WorkoutSession> sessions = workoutSessionRepository.findPublicSessionsByUserIds(visibleUserIds, pageable);
-        List<MealLog> meals = mealLogRepository.findMealsByUserIds(visibleUserIds, pageable);
+        int feedQueryLimit = Math.toIntExact(Math.addExact(pageable.getOffset(), (long) pageable.getPageSize()));
+        Pageable feedSourcePageable = PageRequest.of(0, feedQueryLimit, pageable.getSort());
 
-        List<FeedItemDTO> feedItems = new ArrayList<>();
+        List<WorkoutSession> sessions = workoutSessionRepository.findPublicSessionsByUserIds(visibleUserIds, feedSourcePageable);
+        List<MealLog> meals = mealLogRepository.findMealsByUserIds(visibleUserIds, feedSourcePageable);
 
-        for (WorkoutSession ws : sessions) {
-            long likes = feedInteractionRepository.countByWorkoutSessionIdAndType(ws.getId(), InteractionType.LIKE);
-            long comments = feedInteractionRepository.countByWorkoutSessionIdAndType(ws.getId(), InteractionType.COMMENT);
-            boolean isLiked = feedInteractionRepository.existsByUserIdAndWorkoutSessionIdAndType(userId, ws.getId(), InteractionType.LIKE);
-
-            List<CommentResponseDTO> recentComments = feedInteractionRepository
-                    .findByWorkoutSessionIdAndTypeOrderByCreatedAtAsc(ws.getId(), InteractionType.COMMENT)
-                    .stream()
-                    .map(CommentResponseDTO::fromEntity)
-                    .toList();
-
-            feedItems.add(FeedItemDTO.builder()
-                    .id(ws.getId())
-                    .activityType("WORKOUT")
-                    .authorId(ws.getUser().getId())
-                    .authorName(ws.getUser().getName())
-                    .authorPhotoUrl(ws.getUser().getProfilePictureUrl())
-                    .createdAt(ws.getStartedAt())
-                    .title(ws.getTitle())
-                    .description(ws.getNotes())
-                    .workoutDetails(WorkoutSessionResponseDTO.fromEntity(ws))
-                    .likesCount(likes)
-                    .commentsCount(comments)
-                    .isLikedByMe(isLiked)
-                    .recentComments(recentComments)
-                    .build());
-        }
-
-        for (MealLog ml : meals) {
-            long likes = feedInteractionRepository.countByMealLogIdAndType(ml.getId(), InteractionType.LIKE);
-            long comments = feedInteractionRepository.countByMealLogIdAndType(ml.getId(), InteractionType.COMMENT);
-            boolean isLiked = feedInteractionRepository.existsByUserIdAndMealLogIdAndType(userId, ml.getId(), InteractionType.LIKE);
-
-            List<CommentResponseDTO> recentComments = feedInteractionRepository
-                    .findByMealLogIdAndTypeOrderByCreatedAtAsc(ml.getId(), InteractionType.COMMENT)
-                    .stream()
-                    .map(CommentResponseDTO::fromEntity)
-                    .toList();
-
-            feedItems.add(FeedItemDTO.builder()
-                    .id(ml.getId())
-                    .activityType("MEAL")
-                    .authorId(ml.getUser().getId())
-                    .authorName(ml.getUser().getName())
-                    .authorPhotoUrl(ml.getUser().getProfilePictureUrl())
-                    .createdAt(ml.getLoggedAt())
-                    .title("Refeição: " + ml.getMealType().name())
-                    .photoUrl(ml.getPhotoUrl())
-                    .mealDetails(MealLogResponseDTO.fromEntity(ml))
-                    .likesCount(likes)
-                    .commentsCount(comments)
-                    .isLikedByMe(isLiked)
-                    .recentComments(recentComments)
-                    .build());
-        }
+        List<FeedActivity> activities = new ArrayList<>(sessions.size() + meals.size());
+        sessions.forEach(session -> activities.add(new FeedActivity(session.getStartedAt(), session, null)));
+        meals.forEach(meal -> activities.add(new FeedActivity(meal.getLoggedAt(), null, meal)));
 
         // Ordena pela data mais recente
-        feedItems.sort(Comparator.comparing(FeedItemDTO::createdAt).reversed());
+        activities.sort(Comparator.comparing(FeedActivity::createdAt).reversed());
 
         // Paginação manual da lista combinada
         int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), feedItems.size());
-        if (start > feedItems.size()) {
+        int end = Math.min(feedQueryLimit, activities.size());
+        if (start >= activities.size()) {
             return Collections.emptyList();
         }
 
-        return feedItems.subList(start, end);
+        return activities.subList(start, end).stream()
+                .map(activity -> activity.workoutSession() != null
+                        ? toWorkoutFeedItem(userId, activity.workoutSession())
+                        : toMealFeedItem(userId, activity.mealLog()))
+                .toList();
+    }
+
+    private FeedItemDTO toWorkoutFeedItem(UUID userId, WorkoutSession session) {
+        long likes = feedInteractionRepository.countByWorkoutSessionIdAndType(session.getId(), InteractionType.LIKE);
+        long comments = feedInteractionRepository.countByWorkoutSessionIdAndType(session.getId(), InteractionType.COMMENT);
+        boolean isLiked = feedInteractionRepository.existsByUserIdAndWorkoutSessionIdAndType(
+                userId, session.getId(), InteractionType.LIKE);
+
+        List<CommentResponseDTO> recentComments = feedInteractionRepository
+                .findByWorkoutSessionIdAndTypeOrderByCreatedAtAsc(session.getId(), InteractionType.COMMENT)
+                .stream()
+                .map(CommentResponseDTO::fromEntity)
+                .toList();
+
+        return FeedItemDTO.builder()
+                .id(session.getId())
+                .activityType("WORKOUT")
+                .authorId(session.getUser().getId())
+                .authorName(session.getUser().getName())
+                .authorPhotoUrl(session.getUser().getProfilePictureUrl())
+                .createdAt(session.getStartedAt())
+                .title(session.getTitle())
+                .description(session.getNotes())
+                .workoutDetails(WorkoutSessionResponseDTO.fromEntity(session))
+                .likesCount(likes)
+                .commentsCount(comments)
+                .isLikedByMe(isLiked)
+                .recentComments(recentComments)
+                .build();
+    }
+
+    private FeedItemDTO toMealFeedItem(UUID userId, MealLog meal) {
+        long likes = feedInteractionRepository.countByMealLogIdAndType(meal.getId(), InteractionType.LIKE);
+        long comments = feedInteractionRepository.countByMealLogIdAndType(meal.getId(), InteractionType.COMMENT);
+        boolean isLiked = feedInteractionRepository.existsByUserIdAndMealLogIdAndType(
+                userId, meal.getId(), InteractionType.LIKE);
+
+        List<CommentResponseDTO> recentComments = feedInteractionRepository
+                .findByMealLogIdAndTypeOrderByCreatedAtAsc(meal.getId(), InteractionType.COMMENT)
+                .stream()
+                .map(CommentResponseDTO::fromEntity)
+                .toList();
+
+        return FeedItemDTO.builder()
+                .id(meal.getId())
+                .activityType("MEAL")
+                .authorId(meal.getUser().getId())
+                .authorName(meal.getUser().getName())
+                .authorPhotoUrl(meal.getUser().getProfilePictureUrl())
+                .createdAt(meal.getLoggedAt())
+                .title("Refeição: " + meal.getMealType().name())
+                .photoUrl(meal.getPhotoUrl())
+                .mealDetails(MealLogResponseDTO.fromEntity(meal))
+                .likesCount(likes)
+                .commentsCount(comments)
+                .isLikedByMe(isLiked)
+                .recentComments(recentComments)
+                .build();
     }
 
     @Transactional
@@ -298,4 +312,3 @@ public class SocialService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com ID: " + userId));
     }
 }
-

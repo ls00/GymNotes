@@ -1,6 +1,7 @@
 package com.gymnotes.security;
 
 import com.gymnotes.domain.User;
+import com.gymnotes.domain.enums.UserRole;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -23,7 +24,8 @@ public class UserPrincipal implements UserDetails {
         this.id = user.getId();
         this.email = user.getEmail();
         this.password = user.getPasswordHash();
-        this.authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        UserRole role = user.getRole() != null ? user.getRole() : UserRole.USER;
+        this.authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
         this.user = user;
     }
 
@@ -62,4 +64,3 @@ public class UserPrincipal implements UserDetails {
         return true;
     }
 }
-
