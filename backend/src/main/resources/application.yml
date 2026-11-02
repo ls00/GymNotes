@@ -1,0 +1,69 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: gymnotes-backend
+
+  # Database configuration
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:gymnotes_db}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:local-only-not-for-production}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: GymNotesHikariCP
+      maximum-pool-size: 15
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+
+  # JPA / Hibernate configuration
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+
+  # Flyway database migrations
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+    validate-on-migrate: true
+
+# Application specific properties
+gymnotes:
+  security:
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
+    jwt:
+      secret: ${JWT_SECRET:local-only-not-for-production-gymnotes-jwt-secret}
+      expiration: 86400000 # 24 hours in ms
+      refresh-token:
+        expiration: 604800000 # 7 days in ms
+  storage:
+    provider: ${STORAGE_PROVIDER:s3}
+    endpoint: ${STORAGE_ENDPOINT:http://localhost:9000}
+    bucket-name: ${STORAGE_BUCKET:gymnotes-media}
+    access-key: ${STORAGE_ACCESS_KEY:local-minio-access-key}
+    secret-key: ${STORAGE_SECRET_KEY:local-only-minio-secret-key}
+
+# OpenAPI / Swagger configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: method

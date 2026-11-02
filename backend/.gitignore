@@ -1,0 +1,29 @@
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+
+# Java / IDE output
+target/
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Terraform state
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.vercel
+.env*

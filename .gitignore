@@ -1,0 +1,43 @@
+# Local agent and IDE state
+.agents/
+.claude/
+.vscode/
+**/.vscode/
+**/.idea/
+skills-lock.json
+
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+
+# Build output and dependencies
+**/target/
+**/node_modules/
+**/.next/
+**/.next-*/
+**/out/
+**/build/
+**/coverage/
+**/tsconfig.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Terraform state and variable files
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
