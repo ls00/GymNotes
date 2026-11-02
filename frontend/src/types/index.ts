@@ -2,6 +2,7 @@
 export interface UserSummary {
   id: string;
   name: string;
+  username: string;
   email: string;
   role?: "USER" | "SUPER_ADMIN";
   profilePictureUrl?: string | null;
@@ -22,12 +23,13 @@ export interface AuthResponse {
 }
 
 export interface LoginRequest {
-  email: string;
+  identifier: string;
   password: string;
 }
 
 export interface RegisterRequest {
-  name: string;
+  username: string;
+  displayName: string;
   email: string;
   password: string;
 }
@@ -40,11 +42,28 @@ export interface WorkoutPlan {
   description?: string;
   isActive: boolean;
   createdAt: string;
+  exercises?: WorkoutPlanExercise[];
+}
+
+export interface WorkoutPlanExercise {
+  exerciseId: string;
+  exerciseName: string;
+  muscleGroup?: string;
+  equipment?: string | null;
+  exerciseOrder: number;
+  sets: WorkoutPlanSet[];
+}
+
+export interface WorkoutPlanSet {
+  setOrder: number;
+  reps: number;
+  weightKg: number;
 }
 
 export interface CreateWorkoutPlan {
   name: string;
   description?: string;
+  exercises: WorkoutPlanExercise[];
 }
 
 export interface Exercise {
@@ -69,6 +88,7 @@ export interface CreateWorkoutSession {
   workoutPlanId?: string;
   title: string;
   notes?: string;
+  photoUrl?: string;
   startedAt?: string;
   endedAt?: string;
   isPublic?: boolean;
@@ -87,6 +107,7 @@ export interface WorkoutSessionResponse {
   isPublic: boolean;
   createdAt: string;
   sets: WorkoutSet[];
+  photoUrl?: string;
 }
 
 export interface ExerciseProgress {
@@ -129,6 +150,7 @@ export interface LogMealRequest {
   mealType: "BREAKFAST" | "MORNING_SNACK" | "LUNCH" | "AFTERNOON_SNACK" | "PRE_WORKOUT" | "POST_WORKOUT" | "DINNER" | "SUPPER" | "SNACK";
   loggedAt?: string;
   photoUrl?: string;
+  isPublic?: boolean;
   items: MealItemRequest[];
 }
 
@@ -138,6 +160,7 @@ export interface MealLogResponse {
   mealType: string;
   loggedAt: string;
   photoUrl?: string;
+  isPublic: boolean;
   items: MealItemResponse[];
   totalCalories: number;
   totalProteinG: number;
@@ -154,8 +177,76 @@ export interface DailyNutritionSummary {
   proteinGoalG?: number;
   remainingProteinG?: number;
   totalCarbsG: number;
+  carbsGoalG?: number;
   totalFatsG: number;
+  fatsGoalG?: number;
   meals: MealLogResponse[];
+}
+
+export type NutritionObjective =
+  | "WEIGHT_LOSS"
+  | "MUSCLE_GAIN"
+  | "BODY_RECOMPOSITION";
+
+export type NutritionActivityLevel =
+  | "SEDENTARY"
+  | "LIGHT"
+  | "MODERATE"
+  | "HIGH"
+  | "VERY_HIGH";
+
+export type BiologicalSex = "MALE" | "FEMALE";
+
+export interface NutritionGoalRequest {
+  objective: NutritionObjective;
+  biologicalSex: BiologicalSex;
+  age: number;
+  heightCm: number;
+  activityLevel: NutritionActivityLevel;
+  currentWeightKg: number;
+  targetWeightKg?: number;
+  targetDate: string;
+}
+
+export interface NutritionGoal {
+  objective: NutritionObjective;
+  biologicalSex: BiologicalSex;
+  age: number;
+  heightCm: number;
+  activityLevel: NutritionActivityLevel;
+  startingWeightKg: number;
+  currentWeightKg: number;
+  targetWeightKg?: number | null;
+  startDate: string;
+  targetDate: string;
+  daysRemaining: number;
+  calorieGoal: number;
+  proteinGoalG: number;
+  carbsGoalG: number;
+  fatsGoalG: number;
+  calculationNote: string;
+}
+
+export interface WeightEntry {
+  id: string;
+  measuredAt: string;
+  weightKg: number;
+}
+
+export interface NutritionProgressDay {
+  date: string;
+  calories: number;
+}
+
+export interface NutritionProgress {
+  goal?: NutritionGoal | null;
+  weightEntries: WeightEntry[];
+  dailyIntake: NutritionProgressDay[];
+}
+
+export interface SaveWeightEntryRequest {
+  measuredAt: string;
+  weightKg: number;
 }
 
 // Social Types
@@ -173,6 +264,7 @@ export interface FeedItem {
   activityType: "WORKOUT" | "MEAL";
   authorId: string;
   authorName: string;
+  authorUsername: string;
   authorPhotoUrl?: string;
   createdAt: string;
   title: string;
@@ -185,6 +277,32 @@ export interface FeedItem {
   isLikedByMe: boolean;
   recentComments: CommentResponse[];
 }
+
+export interface UserSearchResult {
+  userId: string;
+  username: string;
+  displayName: string;
+  profilePictureUrl?: string | null;
+  friendshipStatus: "NONE" | "PENDING_SENT" | "PENDING_RECEIVED" | "ACCEPTED";
+  friendshipId?: string | null;
+  createdAt: string;
+}
+
+export interface FriendRequest {
+  friendshipId: string;
+  requesterId: string;
+  requesterName: string;
+  requesterUsername: string;
+  requesterPhotoUrl?: string | null;
+  addresseeId: string;
+  addresseeName: string;
+  addresseeUsername: string;
+  addresseePhotoUrl?: string | null;
+  status: "PENDING" | "ACCEPTED" | "REJECTED";
+  createdAt: string;
+}
+
+export type FeedScope = "GLOBAL" | "FRIENDS";
 
 export interface InteractionRequest {
   targetType: "WORKOUT" | "MEAL";

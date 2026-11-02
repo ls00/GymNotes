@@ -34,5 +34,36 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
     List<WorkoutSession> findPublicSessionsByUserIds(
             @Param("userIds") java.util.Collection<UUID> userIds,
             org.springframework.data.domain.Pageable pageable);
-}
 
+    @Query("SELECT DISTINCT ws FROM WorkoutSession ws " +
+           "LEFT JOIN FETCH ws.sets s " +
+           "LEFT JOIN FETCH s.exercise " +
+           "WHERE ws.isPublic = true AND ws.user.id <> :excludedUserId " +
+           "AND (:query = '' OR LOCATE(LOWER(:query), LOWER(ws.title)) > 0 " +
+           "OR LOCATE(LOWER(:query), LOWER(COALESCE(ws.notes, ''))) > 0 " +
+           "OR LOCATE(LOWER(:query), LOWER(ws.user.name)) > 0 " +
+           "OR LOCATE(LOWER(:query), LOWER(ws.user.username)) > 0 " +
+           "OR EXISTS (SELECT setItem.id FROM WorkoutSet setItem WHERE setItem.workoutSession = ws " +
+           "AND LOCATE(LOWER(:query), LOWER(setItem.exercise.name)) > 0)) " +
+           "ORDER BY ws.startedAt DESC")
+    List<WorkoutSession> searchGlobalPublicSessions(
+            @Param("excludedUserId") UUID excludedUserId,
+            @Param("query") String query,
+            org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT DISTINCT ws FROM WorkoutSession ws " +
+           "LEFT JOIN FETCH ws.sets s " +
+           "LEFT JOIN FETCH s.exercise " +
+           "WHERE ws.user.id IN :userIds AND ws.isPublic = true " +
+           "AND (:query = '' OR LOCATE(LOWER(:query), LOWER(ws.title)) > 0 " +
+           "OR LOCATE(LOWER(:query), LOWER(COALESCE(ws.notes, ''))) > 0 " +
+           "OR LOCATE(LOWER(:query), LOWER(ws.user.name)) > 0 " +
+           "OR LOCATE(LOWER(:query), LOWER(ws.user.username)) > 0 " +
+           "OR EXISTS (SELECT setItem.id FROM WorkoutSet setItem WHERE setItem.workoutSession = ws " +
+           "AND LOCATE(LOWER(:query), LOWER(setItem.exercise.name)) > 0)) " +
+           "ORDER BY ws.startedAt DESC")
+    List<WorkoutSession> searchFriendsPublicSessions(
+            @Param("userIds") java.util.Collection<UUID> userIds,
+            @Param("query") String query,
+            org.springframework.data.domain.Pageable pageable);
+}

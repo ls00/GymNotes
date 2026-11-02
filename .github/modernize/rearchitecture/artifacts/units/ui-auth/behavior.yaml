@@ -1,0 +1,34 @@
+unit: ui-auth
+side_effects:
+  - source_loc: "frontend/src/hooks/useAuth.ts:30"
+    effect: "On successful login/registration, save access token, refresh token, and serialized user in localStorage; update React Query user cache and navigate to /workouts."
+    must_preserve: true
+  - source_loc: "frontend/src/services/api.ts:20"
+    effect: "Attach the stored access token as an Authorization bearer header for browser API requests."
+    must_preserve: true
+branches:
+  - source_loc: "frontend/src/app/(auth)/login/page.tsx:18"
+    condition: "Registration mode is selected."
+    behavior: "Require a nonblank name before calling register; otherwise call login."
+    must_preserve: true
+  - source_loc: "frontend/src/services/api.ts:35"
+    condition: "A non-login/register API call returns HTTP 401."
+    behavior: "Clear access/refresh/user localStorage values and replace the current route with /login unless already there."
+    must_preserve: true
+error_paths:
+  - source_loc: "frontend/src/app/(auth)/login/page.tsx:31"
+    trigger: "Registration/login API request rejects."
+    outcome: "Show server message when present; otherwise show a generic credentials or connection message."
+    contract: "Visible inline login-form error; no navigation on failure."
+    must_preserve: true
+  - source_loc: "frontend/src/services/api.ts:35"
+    trigger: "Stored access token expires or becomes invalid on an authenticated request."
+    outcome: "Clear local session and redirect to /login; no refresh-token exchange is attempted."
+    contract: "HTTP 401 drives client-side session clearing."
+    must_preserve: true
+concurrency:
+  model: event-loop
+  tx_boundary:
+    source_loc: "frontend/src/hooks/useAuth.ts:26"
+    scope: "No frontend database transaction; login/register are asynchronous HTTP mutations handled transactionally by api-auth."
+    must_preserve: true

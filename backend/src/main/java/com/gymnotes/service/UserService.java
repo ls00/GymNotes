@@ -4,12 +4,14 @@ import com.gymnotes.domain.User;
 import com.gymnotes.dto.UpdateProfileDTO;
 import com.gymnotes.dto.UserResponseDTO;
 import com.gymnotes.exception.ResourceNotFoundException;
+import com.gymnotes.exception.UsernameAlreadyExistsException;
 import com.gymnotes.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -28,6 +30,13 @@ public class UserService {
     public UserResponseDTO updateProfile(UUID userId, UpdateProfileDTO request) {
         User user = findUserById(userId);
 
+        if (StringUtils.hasText(request.username())) {
+            String username = request.username().trim().toLowerCase(Locale.ROOT);
+            if (!username.equalsIgnoreCase(user.getUsername()) && userRepository.existsByUsernameIgnoreCase(username)) {
+                throw new UsernameAlreadyExistsException("Este nome de usuário já está em uso.");
+            }
+            user.setUsername(username);
+        }
         if (StringUtils.hasText(request.name())) {
             user.setName(request.name().trim());
         }
@@ -56,4 +65,3 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com o ID: " + userId));
     }
 }
-

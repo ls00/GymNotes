@@ -6,6 +6,7 @@ import com.gymnotes.domain.MealLog;
 import com.gymnotes.domain.User;
 import com.gymnotes.domain.WorkoutSession;
 import com.gymnotes.domain.enums.FriendshipStatus;
+import com.gymnotes.domain.enums.FeedScope;
 import com.gymnotes.domain.enums.InteractionType;
 import com.gymnotes.dto.*;
 import com.gymnotes.exception.ResourceNotFoundException;
@@ -114,16 +115,85 @@ public class SocialService {
     }
 
     @Transactional(readOnly = true)
-    public List<FeedItemDTO> getFeed(UUID userId, Pageable pageable) {
-        // Amigos aceitos + o próprio usuário
-        List<UUID> visibleUserIds = new ArrayList<>(friendshipRepository.findAcceptedFriendIds(userId));
-        visibleUserIds.add(userId);
+    public List<UserSearchResultDTO> searchUsers(UUID userId, String query, Pageable pageable) {
+        String normalizedQuery = normalizeSearchQuery(query);
+        if (normalizedQuery.length() < 2) {
+            return List.of();
+        }
+
+        return userRepository.searchOtherUsers(userId, normalizedQuery, pageable)
+                .map(user -> {
+                    Optional<Friendship> relationship =
+                            friendshipRepository.findFriendshipBetween(userId, user.getId());
+                    String status = relationship.map(friendship -> {
+                        if (friendship.getStatus() == FriendshipStatus.ACCEPTED) {
+                            return "ACCEPTED";
+                        }
+                        if (friendship.getStatus() != FriendshipStatus.PENDING) {
+                            return "NONE";
+                        }
+                        return friendship.getRequester().getId().equals(userId)
+                                ? "PENDING_SENT"
+                                : "PENDING_RECEIVED";
+                    }).orElse("NONE");
+
+                    return new UserSearchResultDTO(
+                            user.getId(),
+                            user.getUsername(),
+                            user.getName(),
+                            user.getProfilePictureUrl(),
+                            status,
+                            relationship.map(Friendship::getId).orElse(null),
+                            user.getCreatedAt());
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserSearchResultDTO> getFriends(UUID userId) {
+        Map<UUID, UserSearchResultDTO> friends = new LinkedHashMap<>();
+        friendshipRepository.findByRequesterIdAndStatusOrderByCreatedAtDesc(userId, FriendshipStatus.ACCEPTED)
+                .forEach(friendship -> addFriend(friends, friendship.getAddressee(), friendship));
+        friendshipRepository.findByAddresseeIdAndStatusOrderByCreatedAtDesc(userId, FriendshipStatus.ACCEPTED)
+                .forEach(friendship -> addFriend(friends, friendship.getRequester(), friendship));
+        return List.copyOf(friends.values());
+    }
+
+    @Transactional(readOnly = true)
+    public List<FriendRequestDTO> getIncomingFriendRequests(UUID userId) {
+        return friendshipRepository
+                .findByAddresseeIdAndStatusOrderByCreatedAtAsc(userId, FriendshipStatus.PENDING)
+                .stream()
+                .map(FriendRequestDTO::fromEntity)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FeedItemDTO> getFeed(UUID userId, FeedScope scope, String query, Pageable pageable) {
+        List<UUID> visibleUserIds = scope == FeedScope.FRIENDS
+                ? friendshipRepository.findAcceptedFriendIds(userId)
+                : List.of();
+        if (scope == FeedScope.FRIENDS && visibleUserIds.isEmpty()) {
+            return List.of();
+        }
 
         int feedQueryLimit = Math.toIntExact(Math.addExact(pageable.getOffset(), (long) pageable.getPageSize()));
         Pageable feedSourcePageable = PageRequest.of(0, feedQueryLimit, pageable.getSort());
+        String normalizedQuery = normalizeSearchQuery(query);
 
-        List<WorkoutSession> sessions = workoutSessionRepository.findPublicSessionsByUserIds(visibleUserIds, feedSourcePageable);
-        List<MealLog> meals = mealLogRepository.findMealsByUserIds(visibleUserIds, feedSourcePageable);
+        List<WorkoutSession> sessions;
+        List<MealLog> meals;
+        if (scope == FeedScope.GLOBAL) {
+            sessions = workoutSessionRepository.searchGlobalPublicSessions(
+                    userId, normalizedQuery, feedSourcePageable);
+            meals = mealLogRepository.searchGlobalPublicMeals(
+                    userId, normalizedQuery, feedSourcePageable);
+        } else {
+            sessions = workoutSessionRepository.searchFriendsPublicSessions(
+                    visibleUserIds, normalizedQuery, feedSourcePageable);
+            meals = mealLogRepository.searchFriendsPublicMeals(
+                    visibleUserIds, normalizedQuery, feedSourcePageable);
+        }
 
         List<FeedActivity> activities = new ArrayList<>(sessions.size() + meals.size());
         sessions.forEach(session -> activities.add(new FeedActivity(session.getStartedAt(), session, null)));
@@ -146,6 +216,24 @@ public class SocialService {
                 .toList();
     }
 
+    private void addFriend(
+            Map<UUID, UserSearchResultDTO> friends,
+            User friend,
+            Friendship friendship) {
+        friends.putIfAbsent(friend.getId(), new UserSearchResultDTO(
+                friend.getId(),
+                friend.getUsername(),
+                friend.getName(),
+                friend.getProfilePictureUrl(),
+                "ACCEPTED",
+                friendship.getId(),
+                friendship.getCreatedAt()));
+    }
+
+    private String normalizeSearchQuery(String query) {
+        return query == null ? "" : query.trim();
+    }
+
     private FeedItemDTO toWorkoutFeedItem(UUID userId, WorkoutSession session) {
         long likes = feedInteractionRepository.countByWorkoutSessionIdAndType(session.getId(), InteractionType.LIKE);
         long comments = feedInteractionRepository.countByWorkoutSessionIdAndType(session.getId(), InteractionType.COMMENT);
@@ -163,10 +251,12 @@ public class SocialService {
                 .activityType("WORKOUT")
                 .authorId(session.getUser().getId())
                 .authorName(session.getUser().getName())
+                .authorUsername(session.getUser().getUsername())
                 .authorPhotoUrl(session.getUser().getProfilePictureUrl())
                 .createdAt(session.getStartedAt())
                 .title(session.getTitle())
                 .description(session.getNotes())
+                .photoUrl(session.getPhotoUrl())
                 .workoutDetails(WorkoutSessionResponseDTO.fromEntity(session))
                 .likesCount(likes)
                 .commentsCount(comments)
@@ -192,6 +282,7 @@ public class SocialService {
                 .activityType("MEAL")
                 .authorId(meal.getUser().getId())
                 .authorName(meal.getUser().getName())
+                .authorUsername(meal.getUser().getUsername())
                 .authorPhotoUrl(meal.getUser().getProfilePictureUrl())
                 .createdAt(meal.getLoggedAt())
                 .title("Refeição: " + meal.getMealType().name())
@@ -221,6 +312,11 @@ public class SocialService {
             targetAuthor = mealLog.getUser();
         } else {
             throw new IllegalArgumentException("Tipo de alvo inválido: " + request.targetType());
+        }
+
+        if ((workoutSession != null && !Boolean.TRUE.equals(workoutSession.getIsPublic()))
+                || (mealLog != null && !Boolean.TRUE.equals(mealLog.getIsPublic()))) {
+            throw new AccessDeniedException("Esta publicação não está disponível.");
         }
 
         if (request.type() == InteractionType.LIKE) {

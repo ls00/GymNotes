@@ -1,0 +1,45 @@
+flows:
+  - name: Browser access token
+    medium: static
+    key: "localStorage.gymnotes_token"
+    writer:
+      unit: ui-auth
+      source_loc: "frontend/src/hooks/useAuth.ts:30"
+    reader:
+      unit: ui-dashboard
+      source_loc: "frontend/src/app/(dashboard)/layout.tsx:17"
+    pairing: matched
+    must_preserve: true
+    must_confirm: null
+    verification_hint: "Sign in, navigate/reload a dashboard route, and verify redirect to /login only after removing the access token."
+    notes: "Browser localStorage is used as the session gate; the shared Axios request interceptor also reads this key to attach Authorization."
+
+  - name: Workout sessions available to social feed
+    medium: database
+    key: "workout_sessions"
+    writer:
+      unit: api-workouts
+      source_loc: "backend/src/main/java/com/gymnotes/service/WorkoutService.java:68"
+    reader:
+      unit: api-social
+      source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:117"
+    pairing: matched
+    must_preserve: true
+    must_confirm: null
+    verification_hint: "Create a public workout, then request the feed as its owner or an accepted friend and verify the activity and details."
+    notes: "Feed includes sessions selected by visible user IDs through the public-session repository query."
+
+  - name: Meal logs available to social feed
+    medium: database
+    key: "meal_logs"
+    writer:
+      unit: api-nutrition
+      source_loc: "backend/src/main/java/com/gymnotes/service/NutritionService.java:58"
+    reader:
+      unit: api-social
+      source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:117"
+    pairing: matched
+    must_preserve: true
+    must_confirm: null
+    verification_hint: "Log a meal, then request the feed as its owner or an accepted friend and verify the activity and calculated totals."
+    notes: "Social service combines meal logs with workout sessions into one chronological response."

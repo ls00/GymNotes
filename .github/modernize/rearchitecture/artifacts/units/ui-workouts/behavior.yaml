@@ -1,0 +1,47 @@
+unit: ui-workouts
+side_effects:
+  - source_loc: "frontend/src/app/(dashboard)/workouts/page.tsx:124"
+    effect: "Create a workout plan, select the returned plan, clear the plan name, and close the form."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/workouts/page.tsx:137"
+    effect: "Submit completed sets with selected exercise, title, optional plan, timestamps, and visibility; on success show saved confirmation."
+    must_preserve: true
+branches:
+  - source_loc: "frontend/src/app/(dashboard)/workouts/page.tsx:139"
+    condition: "No exercise is selected or no set is completed."
+    behavior: "Do not submit; show a validation message."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/workouts/page.tsx:143"
+    condition: "A completed set has zero or fewer repetitions."
+    behavior: "Do not submit; ask for at least one repetition."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/workouts/page.tsx:82"
+    condition: "Rest timer is active."
+    behavior: "Decrement once per second and stop at zero."
+    must_preserve: true
+  - source_loc: "frontend/src/hooks/useWorkouts.ts:44"
+    condition: "Session creation succeeds."
+    behavior: "Invalidate workout history and social feed queries."
+    must_preserve: true
+error_paths:
+  - source_loc: "frontend/src/app/(dashboard)/workouts/page.tsx:128"
+    trigger: "Plan creation mutation rejects."
+    outcome: "Show a plan-specific error message."
+    contract: "Inline page error."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/workouts/page.tsx:157"
+    trigger: "Session creation mutation rejects."
+    outcome: "Show a connection/save error and leave the session unsaved."
+    contract: "Inline page error."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/workouts/page.tsx:55"
+    trigger: "Exercise search or history query fails."
+    outcome: "Display a search/history error state; history exposes a retry action."
+    contract: "Page-level loading/error states."
+    must_preserve: true
+concurrency:
+  model: event-loop
+  tx_boundary:
+    source_loc: "frontend/src/hooks/useWorkouts.ts:38"
+    scope: "No frontend database transaction; session write is an asynchronous request to the api-workouts transaction."
+    must_preserve: true

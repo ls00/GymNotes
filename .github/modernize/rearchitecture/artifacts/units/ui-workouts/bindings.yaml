@@ -1,0 +1,15 @@
+unit: ui-workouts
+bindings:
+  - type: route-declaration
+    name: "App Router page /workouts"
+    source_loc: "frontend/src/app/(dashboard)/workouts/page.tsx:31"
+    target: "WorkoutsPage"
+    must_appear_in_target: true
+    notes: "Client page for plans, exercise search, session form, history, and progress."
+  - type: convention
+    name: "TanStack Query hooks"
+    source_loc: "frontend/src/hooks/useWorkouts.ts:12"
+    target: "Workout API calls and cache invalidation"
+    must_appear_in_target: true
+    notes: "Uses React Query for plans, catalog, history, session creation, and exercise progress."
+runtime_config: []

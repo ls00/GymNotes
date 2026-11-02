@@ -36,6 +36,9 @@ public class WorkoutSession {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "photo_url", columnDefinition = "TEXT")
+    private String photoUrl;
+
     @Column(name = "started_at", nullable = false)
     private Instant startedAt;
 
@@ -44,7 +47,7 @@ public class WorkoutSession {
 
     @Builder.Default
     @Column(name = "is_public", nullable = false)
-    private Boolean isPublic = true;
+    private Boolean isPublic = false;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -63,7 +66,7 @@ public class WorkoutSession {
             this.startedAt = Instant.now();
         }
         if (this.isPublic == null) {
-            this.isPublic = true;
+            this.isPublic = false;
         }
     }
 
@@ -77,4 +80,3 @@ public class WorkoutSession {
         set.setWorkoutSession(null);
     }
 }
-

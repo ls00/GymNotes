@@ -1,0 +1,265 @@
+units:
+  - name: api-auth
+    trigger: api
+    trigger_detail: "POST /api/v1/auth/register; POST /api/v1/auth/login"
+    source_anchors:
+      - path: backend/src/main/java/com/gymnotes/controller/AuthController.java
+        line: 19
+      - path: backend/src/main/java/com/gymnotes/service/AuthService.java
+        line: 26
+    exported_signature:
+      - method: "POST /api/v1/auth/register(RegisterRequestDTO) -> 201 AuthResponseDTO"
+        source_loc: "backend/src/main/java/com/gymnotes/controller/AuthController.java:28"
+        stability: must_preserve
+      - method: "POST /api/v1/auth/login(LoginRequestDTO) -> 200 AuthResponseDTO"
+        source_loc: "backend/src/main/java/com/gymnotes/controller/AuthController.java:35"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs:
+      - module: User
+        used_fields: [id, name, email, passwordHash, role]
+      - module: UserResponseDTO
+        used_fields: [id, name, email, role, profilePictureUrl, bio, targetObjective, dailyCalorieGoal, dailyProteinGoalG, createdAt, updatedAt]
+      - module: ApiErrorHandler
+        used_fields: [validationErrors, conflictErrors, authenticationErrors, fallbackErrors]
+
+  - name: api-profile
+    trigger: api
+    trigger_detail: "GET /api/v1/users/me; PUT /api/v1/users/me"
+    source_anchors:
+      - path: backend/src/main/java/com/gymnotes/controller/UserController.java
+        line: 17
+      - path: backend/src/main/java/com/gymnotes/service/UserService.java
+        line: 21
+    exported_signature:
+      - method: "GET /api/v1/users/me() -> 200 UserResponseDTO"
+        source_loc: "backend/src/main/java/com/gymnotes/controller/UserController.java:25"
+        stability: must_preserve
+      - method: "PUT /api/v1/users/me(UpdateProfileDTO) -> 200 UserResponseDTO"
+        source_loc: "backend/src/main/java/com/gymnotes/controller/UserController.java:32"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs:
+      - module: User
+        used_fields: [id, name, email, role, profilePictureUrl, bio, targetObjective, dailyCalorieGoal, dailyProteinGoalG, createdAt, updatedAt]
+      - module: UserResponseDTO
+        used_fields: [id, name, email, role, profilePictureUrl, bio, targetObjective, dailyCalorieGoal, dailyProteinGoalG, createdAt, updatedAt]
+      - module: ApiErrorHandler
+        used_fields: [validationErrors, notFoundErrors, authenticationErrors, fallbackErrors]
+
+  - name: api-workouts
+    trigger: api
+    trigger_detail: "Six REST operations under /api/v1/workouts"
+    source_anchors:
+      - path: backend/src/main/java/com/gymnotes/controller/WorkoutController.java
+        line: 23
+      - path: backend/src/main/java/com/gymnotes/service/WorkoutService.java
+        line: 25
+    exported_signature:
+      - method: "GET /api/v1/workouts/plans() -> List<WorkoutPlanDTO>"
+        source_loc: "backend/src/main/java/com/gymnotes/controller/WorkoutController.java:40"
+        stability: must_preserve
+      - method: "POST /api/v1/workouts/sessions(CreateWorkoutSessionDTO) -> 201 WorkoutSessionResponseDTO"
+        source_loc: "backend/src/main/java/com/gymnotes/controller/WorkoutController.java:55"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs:
+      - module: User
+        used_fields: [id]
+      - module: WorkoutSession
+        used_fields: [id, user, workoutPlan, title, notes, startedAt, endedAt, isPublic, createdAt, sets]
+      - module: ApiErrorHandler
+        used_fields: [validationErrors, notFoundErrors, authenticationErrors, fallbackErrors]
+
+  - name: api-nutrition
+    trigger: api
+    trigger_detail: "Four REST operations under /api/v1/nutrition"
+    source_anchors:
+      - path: backend/src/main/java/com/gymnotes/controller/NutritionController.java
+        line: 23
+      - path: backend/src/main/java/com/gymnotes/service/NutritionService.java
+        line: 26
+    exported_signature:
+      - method: "POST /api/v1/nutrition/meals(LogMealDTO) -> 201 MealLogResponseDTO"
+        source_loc: "backend/src/main/java/com/gymnotes/controller/NutritionController.java:47"
+        stability: must_preserve
+      - method: "GET /api/v1/nutrition/summary/daily(date?) -> DailyNutritionSummaryDTO"
+        source_loc: "backend/src/main/java/com/gymnotes/controller/NutritionController.java:56"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs:
+      - module: User
+        used_fields: [id, dailyCalorieGoal, dailyProteinGoalG]
+      - module: MealLog
+        used_fields: [id, user, mealType, loggedAt, photoUrl, items]
+      - module: ApiErrorHandler
+        used_fields: [validationErrors, notFoundErrors, authenticationErrors, fallbackErrors]
+
+  - name: api-social
+    trigger: api
+    trigger_detail: "Four REST operations under /api/v1/social; notifications emitted over /ws"
+    source_anchors:
+      - path: backend/src/main/java/com/gymnotes/controller/SocialController.java
+        line: 24
+      - path: backend/src/main/java/com/gymnotes/service/SocialService.java
+        line: 30
+      - path: backend/src/main/java/com/gymnotes/config/WebSocketConfig.java
+        line: 10
+    exported_signature:
+      - method: "GET /api/v1/social/feed(page,size) -> List<FeedItemDTO>"
+        source_loc: "backend/src/main/java/com/gymnotes/controller/SocialController.java:51"
+        stability: must_preserve
+      - method: "POST /api/v1/social/interactions(InteractionRequestDTO) -> 200 empty"
+        source_loc: "backend/src/main/java/com/gymnotes/controller/SocialController.java:60"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on:
+      - unit: api-workouts
+        via: "Reads public workout sessions for feed entries and interactions"
+      - unit: api-nutrition
+        via: "Reads meal logs for feed entries and interactions"
+    shared_refs:
+      - module: User
+        used_fields: [id, name, profilePictureUrl]
+      - module: WorkoutSession
+        used_fields: [id, user, title, notes, startedAt, endedAt, isPublic, sets]
+      - module: MealLog
+        used_fields: [id, user, mealType, loggedAt, photoUrl, items]
+      - module: ApiErrorHandler
+        used_fields: [validationErrors, notFoundErrors, authenticationErrors, fallbackErrors]
+
+  - name: ui-auth
+    trigger: page
+    trigger_detail: "GET /login"
+    source_anchors:
+      - path: frontend/src/app/(auth)/login/page.tsx
+        line: 11
+      - path: frontend/src/hooks/useAuth.ts
+        line: 8
+    exported_signature: []
+    dynamic_entrypoints: []
+    depends_on:
+      - unit: api-auth
+        via: "POST /auth/register and POST /auth/login"
+      - unit: api-profile
+        via: "GET /users/me profile query when a token exists"
+    shared_refs:
+      - module: ApiClient
+        used_fields: [baseURL, timeout, requestInterceptor, responseInterceptor]
+      - module: QueryProvider
+        used_fields: [queryClient, retryPolicy]
+      - module: FrontendApiTypes
+        used_fields: [AuthResponse, UserSummary]
+
+  - name: ui-workouts
+    trigger: page
+    trigger_detail: "GET /workouts"
+    source_anchors:
+      - path: frontend/src/app/(dashboard)/workouts/page.tsx
+        line: 31
+      - path: frontend/src/hooks/useWorkouts.ts
+        line: 12
+    exported_signature: []
+    dynamic_entrypoints: []
+    depends_on:
+      - unit: api-workouts
+        via: "Plans, exercise search, session history/creation"
+      - unit: api-social
+        via: "Invalidates the feed query after saving a session"
+      - unit: ui-dashboard
+        via: "Protected dashboard layout and primary navigation"
+    shared_refs:
+      - module: ApiClient
+        used_fields: [baseURL, requestInterceptor, responseInterceptor]
+      - module: QueryProvider
+        used_fields: [queryClient, retryPolicy]
+      - module: DashboardShell
+        used_fields: [sessionGuard, navigation]
+      - module: FrontendApiTypes
+        used_fields: [WorkoutSessionResponse, WorkoutSet]
+
+  - name: ui-nutrition
+    trigger: page
+    trigger_detail: "GET /nutrition"
+    source_anchors:
+      - path: frontend/src/app/(dashboard)/nutrition/page.tsx
+        line: 15
+      - path: frontend/src/hooks/useNutrition.ts
+        line: 7
+    exported_signature: []
+    dynamic_entrypoints: []
+    depends_on:
+      - unit: api-nutrition
+        via: "Daily summary, food search, and meal logging"
+      - unit: api-social
+        via: "Invalidates the feed query after saving a meal"
+      - unit: ui-dashboard
+        via: "Protected dashboard layout and primary navigation"
+    shared_refs:
+      - module: ApiClient
+        used_fields: [baseURL, requestInterceptor, responseInterceptor]
+      - module: QueryProvider
+        used_fields: [queryClient, retryPolicy]
+      - module: DashboardShell
+        used_fields: [sessionGuard, navigation]
+      - module: FrontendApiTypes
+        used_fields: [MealLogResponse, DailyNutritionSummary]
+
+  - name: ui-social
+    trigger: page
+    trigger_detail: "GET /feed"
+    source_anchors:
+      - path: frontend/src/app/(dashboard)/feed/page.tsx
+        line: 52
+      - path: frontend/src/hooks/useFeed.ts
+        line: 7
+    exported_signature: []
+    dynamic_entrypoints: []
+    depends_on:
+      - unit: api-social
+        via: "Feed retrieval and interactions"
+      - unit: ui-dashboard
+        via: "Protected dashboard layout and primary navigation"
+    shared_refs:
+      - module: ApiClient
+        used_fields: [baseURL, requestInterceptor, responseInterceptor]
+      - module: QueryProvider
+        used_fields: [queryClient, retryPolicy]
+      - module: DashboardShell
+        used_fields: [sessionGuard, navigation]
+      - module: FrontendApiTypes
+        used_fields: [FeedItem, CommentResponse, WorkoutSessionResponse, MealLogResponse]
+
+  - name: ui-dashboard
+    trigger: page
+    trigger_detail: "Dashboard layout shared by /workouts, /nutrition, and /feed"
+    source_anchors:
+      - path: frontend/src/app/(dashboard)/layout.tsx
+        line: 7
+    exported_signature: []
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs:
+      - module: DashboardShell
+        used_fields: [sessionGuard, navigation]
+      - module: QueryProvider
+        used_fields: [queryClient, retryPolicy]
+
+  - name: ui-root
+    trigger: page
+    trigger_detail: "GET /"
+    source_anchors:
+      - path: frontend/src/app/page.tsx
+        line: 3
+    exported_signature: []
+    dynamic_entrypoints: []
+    depends_on:
+      - unit: ui-workouts
+        via: "Redirect destination /workouts"
+    shared_refs:
+      - module: QueryProvider
+        used_fields: [queryClient, retryPolicy]

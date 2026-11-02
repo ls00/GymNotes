@@ -1,0 +1,27 @@
+unit: ui-auth
+bindings:
+  - type: route-declaration
+    name: "App Router page /login"
+    source_loc: "frontend/src/app/(auth)/login/page.tsx:11"
+    target: "LoginPage"
+    must_appear_in_target: true
+    notes: "Client component supports login/register mode and calls useAuth."
+  - type: convention
+    name: "use client"
+    source_loc: "frontend/src/app/(auth)/login/page.tsx:1"
+    target: "LoginPage"
+    must_appear_in_target: true
+    notes: "Form, local state, hooks, and router navigation run client-side."
+  - type: convention
+    name: "Browser storage keys"
+    source_loc: "frontend/src/hooks/useAuth.ts:30"
+    target: "Authentication session"
+    must_appear_in_target: true
+    notes: "Keys are gymnotes_token, gymnotes_refresh_token, and gymnotes_user."
+runtime_config:
+  - key: "NEXT_PUBLIC_API_URL"
+    source_loc: "frontend/src/services/api.ts:3"
+    source: env
+    default_value: "http://localhost:8080"
+    must_appear_in_target: true
+    notes: "Axios normalizes this to the /api/v1 base path."

@@ -1,0 +1,306 @@
+contracts:
+  - name: User registration
+    unit: api-auth
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/AuthController.java:26"
+    contract:
+      method: "POST"
+      path: "/api/v1/auth/register"
+      request: "RegisterRequestDTO; bean validation enabled"
+      response: "201 AuthResponseDTO {token, refreshToken, tokenType, expiresIn, user}"
+      error: "400 validation; 409 duplicate email"
+      auth: "Public"
+    target_contract:
+      method: "POST /api/v1/auth/register(RegisterRequestDTO) -> 201 AuthResponseDTO"
+      notes: "Current response and status shape; no API migration target was requested."
+    semantic_divergence: []
+
+  - name: Login
+    unit: api-auth
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/AuthController.java:33"
+    contract:
+      method: "POST"
+      path: "/api/v1/auth/login"
+      request: "LoginRequestDTO; bean validation enabled"
+      response: "200 AuthResponseDTO {token, refreshToken, tokenType, expiresIn, user}"
+      error: "400 validation; 401 invalid credentials"
+      auth: "Public"
+    target_contract:
+      method: "POST /api/v1/auth/login(LoginRequestDTO) -> 200 AuthResponseDTO"
+      notes: "Current response and status shape; refresh-token issuance does not imply a refresh route."
+    semantic_divergence: []
+
+  - name: Read current user profile
+    unit: api-profile
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/UserController.java:25"
+    contract:
+      method: "GET"
+      path: "/api/v1/users/me"
+      request: "Authenticated principal"
+      response: "200 UserResponseDTO"
+      error: "401 unauthenticated; 404 user missing"
+      auth: "JWT bearer"
+    target_contract:
+      method: "GET /api/v1/users/me() -> 200 UserResponseDTO"
+      notes: "Returns identity, profile fields, goals, role, and timestamps."
+    semantic_divergence: []
+
+  - name: Update current user profile
+    unit: api-profile
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/UserController.java:32"
+    contract:
+      method: "PUT"
+      path: "/api/v1/users/me"
+      request: "UpdateProfileDTO; bean validation enabled"
+      response: "200 UserResponseDTO"
+      error: "400 validation; 401 unauthenticated; 404 user missing"
+      auth: "JWT bearer"
+    target_contract:
+      method: "PUT /api/v1/users/me(UpdateProfileDTO) -> 200 UserResponseDTO"
+      notes: "Fields omitted/null are not uniformly applied; preserve the service's current field-by-field update behavior."
+    semantic_divergence: []
+
+  - name: Create workout plan
+    unit: api-workouts
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/WorkoutController.java:31"
+    contract:
+      method: "POST"
+      path: "/api/v1/workouts/plans"
+      request: "CreateWorkoutPlanDTO"
+      response: "201 WorkoutPlanDTO"
+      error: "400 validation; 401 unauthenticated"
+      auth: "JWT bearer"
+    target_contract:
+      method: "POST /api/v1/workouts/plans(CreateWorkoutPlanDTO) -> 201 WorkoutPlanDTO"
+      notes: "Plan is owned by the authenticated user and created active."
+    semantic_divergence: []
+
+  - name: List workout plans
+    unit: api-workouts
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/WorkoutController.java:40"
+    contract:
+      method: "GET"
+      path: "/api/v1/workouts/plans"
+      request: "Authenticated principal"
+      response: "200 List<WorkoutPlanDTO> (active plans, newest first)"
+      error: "401 unauthenticated"
+      auth: "JWT bearer"
+    target_contract:
+      method: "GET /api/v1/workouts/plans() -> 200 List<WorkoutPlanDTO>"
+      notes: "Returns the current user's active plans."
+    semantic_divergence: []
+
+  - name: Search exercises
+    unit: api-workouts
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/WorkoutController.java:47"
+    contract:
+      method: "GET"
+      path: "/api/v1/workouts/exercises/search"
+      request: "q optional; Pageable default size 20"
+      response: "200 Page<ExerciseDTO>"
+      error: "401 unauthenticated"
+      auth: "JWT bearer by anyRequest"
+    target_contract:
+      method: "GET /api/v1/workouts/exercises/search?q=&page=&size= -> 200 Page<ExerciseDTO>"
+      notes: "Blank q lists the paginated catalog; nonblank q searches name ignoring case."
+    semantic_divergence: []
+
+  - name: Create workout session
+    unit: api-workouts
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/WorkoutController.java:55"
+    contract:
+      method: "POST"
+      path: "/api/v1/workouts/sessions"
+      request: "CreateWorkoutSessionDTO with sets"
+      response: "201 WorkoutSessionResponseDTO"
+      error: "400 validation; 401 unauthenticated; 404 plan/exercise missing or foreign"
+      auth: "JWT bearer"
+    target_contract:
+      method: "POST /api/v1/workouts/sessions(CreateWorkoutSessionDTO) -> 201 WorkoutSessionResponseDTO"
+      notes: "Session and child sets are saved atomically; optional plan must belong to caller."
+    semantic_divergence: []
+
+  - name: Workout history
+    unit: api-workouts
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/WorkoutController.java:64"
+    contract:
+      method: "GET"
+      path: "/api/v1/workouts/sessions/history"
+      request: "Authenticated principal"
+      response: "200 List<WorkoutSessionResponseDTO>, startedAt descending"
+      error: "401 unauthenticated"
+      auth: "JWT bearer"
+    target_contract:
+      method: "GET /api/v1/workouts/sessions/history() -> 200 List<WorkoutSessionResponseDTO>"
+      notes: "Returns current user's session history."
+    semantic_divergence: []
+
+  - name: Exercise progress
+    unit: api-workouts
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/WorkoutController.java:72"
+    contract:
+      method: "GET"
+      path: "/api/v1/workouts/exercises/{exerciseId}/progress"
+      request: "exerciseId UUID"
+      response: "200 List<ExerciseProgressDTO>"
+      error: "401 unauthenticated; 404 exercise missing"
+      auth: "JWT bearer"
+    target_contract:
+      method: "GET /api/v1/workouts/exercises/{exerciseId}/progress -> 200 List<ExerciseProgressDTO>"
+      notes: "Each row includes session date, max weight, reps at max weight, and total volume."
+    semantic_divergence: []
+
+  - name: Search foods
+    unit: api-nutrition
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/NutritionController.java:31"
+    contract:
+      method: "GET"
+      path: "/api/v1/nutrition/foods/search"
+      request: "q optional; Pageable default size 20"
+      response: "200 Page<FoodDTO>"
+      error: "401 unauthenticated"
+      auth: "JWT bearer"
+    target_contract:
+      method: "GET /api/v1/nutrition/foods/search?q=&page=&size= -> 200 Page<FoodDTO>"
+      notes: "Searches food name or brand."
+    semantic_divergence: []
+
+  - name: Create food
+    unit: api-nutrition
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/NutritionController.java:40"
+    contract:
+      method: "POST"
+      path: "/api/v1/nutrition/foods"
+      request: "CreateFoodDTO"
+      response: "201 FoodDTO"
+      error: "400 validation; 401 unauthenticated"
+      auth: "JWT bearer"
+    target_contract:
+      method: "POST /api/v1/nutrition/foods(CreateFoodDTO) -> 201 FoodDTO"
+      notes: "Created foods start unverified."
+    semantic_divergence: []
+
+  - name: Log meal
+    unit: api-nutrition
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/NutritionController.java:47"
+    contract:
+      method: "POST"
+      path: "/api/v1/nutrition/meals"
+      request: "LogMealDTO with meal type and food quantities"
+      response: "201 MealLogResponseDTO"
+      error: "400 validation; 401 unauthenticated; 404 food missing"
+      auth: "JWT bearer"
+    target_contract:
+      method: "POST /api/v1/nutrition/meals(LogMealDTO) -> 201 MealLogResponseDTO"
+      notes: "Meal log and child items are saved atomically."
+    semantic_divergence: []
+
+  - name: Daily nutrition summary
+    unit: api-nutrition
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/NutritionController.java:56"
+    contract:
+      method: "GET"
+      path: "/api/v1/nutrition/summary/daily"
+      request: "date optional ISO local date; omitted date uses UTC current date"
+      response: "200 DailyNutritionSummaryDTO including meals and remaining goals"
+      error: "401 unauthenticated; 404 user missing"
+      auth: "JWT bearer"
+    target_contract:
+      method: "GET /api/v1/nutrition/summary/daily?date=YYYY-MM-DD -> 200 DailyNutritionSummaryDTO"
+      notes: "Daily aggregation uses UTC day boundaries and decimal rounding to 2 places."
+    semantic_divergence: []
+
+  - name: Send friendship request
+    unit: api-social
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/SocialController.java:32"
+    contract:
+      method: "POST"
+      path: "/api/v1/social/friends/request/{userId}"
+      request: "userId UUID path parameter"
+      response: "201 FriendRequestDTO"
+      error: "401 unauthenticated; domain duplicate/self request errors"
+      auth: "JWT bearer"
+    target_contract:
+      method: "POST /api/v1/social/friends/request/{userId} -> 201 FriendRequestDTO"
+      notes: "A previously rejected ordered pair can be reopened as pending."
+    semantic_divergence: []
+
+  - name: Respond to friendship request
+    unit: api-social
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/SocialController.java:41"
+    contract:
+      method: "PUT"
+      path: "/api/v1/social/friends/respond/{friendshipId}"
+      request: "friendshipId UUID and accept boolean (defaults true)"
+      response: "200 FriendRequestDTO"
+      error: "401 unauthenticated; 403 wrong recipient; 404 request missing"
+      auth: "JWT bearer"
+    target_contract:
+      method: "PUT /api/v1/social/friends/respond/{friendshipId}?accept=true|false -> 200 FriendRequestDTO"
+      notes: "Only the addressee can respond, and only while status is pending."
+    semantic_divergence: []
+
+  - name: Social feed
+    unit: api-social
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/SocialController.java:51"
+    contract:
+      method: "GET"
+      path: "/api/v1/social/feed"
+      request: "Pageable default size 20"
+      response: "200 List<FeedItemDTO>"
+      error: "401 unauthenticated"
+      auth: "JWT bearer"
+    target_contract:
+      method: "GET /api/v1/social/feed?page=&size= -> 200 List<FeedItemDTO>"
+      notes: "Combines current-user and accepted-friend activity; rows are sorted newest first."
+    semantic_divergence: []
+
+  - name: Feed interaction
+    unit: api-social
+    type: rest
+    stability: must_preserve
+    source_loc: "backend/src/main/java/com/gymnotes/controller/SocialController.java:60"
+    contract:
+      method: "POST"
+      path: "/api/v1/social/interactions"
+      request: "InteractionRequestDTO; target type WORKOUT or MEAL; interaction LIKE or COMMENT"
+      response: "200 empty"
+      error: "400 validation; 401 unauthenticated; 404 target missing"
+      auth: "JWT bearer"
+    target_contract:
+      method: "POST /api/v1/social/interactions(InteractionRequestDTO) -> 200 empty"
+      notes: "LIKE toggles an existing like; COMMENT requires nonblank text."
+    semantic_divergence: []

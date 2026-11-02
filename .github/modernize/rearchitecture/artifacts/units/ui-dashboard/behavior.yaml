@@ -1,0 +1,26 @@
+unit: ui-dashboard
+side_effects:
+  - source_loc: "frontend/src/app/(dashboard)/layout.tsx:16"
+    effect: "On mount and storage events, check gymnotes_token; redirect unauthenticated users to /login."
+    must_preserve: true
+branches:
+  - source_loc: "frontend/src/app/(dashboard)/layout.tsx:17"
+    condition: "Access token exists in localStorage."
+    behavior: "Render dashboard shell and children."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/layout.tsx:20"
+    condition: "Access token is absent."
+    behavior: "Replace route with /login and render session-verification status until authenticated."
+    must_preserve: true
+error_paths:
+  - source_loc: "frontend/src/services/api.ts:35"
+    trigger: "An authenticated API call returns 401."
+    outcome: "The shared client clears stored session data and redirects to login."
+    contract: "Dashboard session is client-side only; this layout does not validate the token with the server before rendering."
+    must_preserve: true
+concurrency:
+  model: event-loop
+  tx_boundary:
+    source_loc: "frontend/src/app/(dashboard)/layout.tsx:14"
+    scope: "No database transaction; the layout uses browser storage and navigation effects."
+    must_preserve: true

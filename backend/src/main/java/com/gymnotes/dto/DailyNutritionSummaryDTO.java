@@ -16,7 +16,8 @@ public record DailyNutritionSummaryDTO(
     BigDecimal proteinGoalG,
     BigDecimal remainingProteinG,
     BigDecimal totalCarbsG,
+    BigDecimal carbsGoalG,
     BigDecimal totalFatsG,
+    BigDecimal fatsGoalG,
     List<MealLogResponseDTO> meals
 ) {}
-

@@ -3,6 +3,8 @@ package com.gymnotes.controller;
 import com.gymnotes.dto.FeedItemDTO;
 import com.gymnotes.dto.FriendRequestDTO;
 import com.gymnotes.dto.InteractionRequestDTO;
+import com.gymnotes.dto.UserSearchResultDTO;
+import com.gymnotes.domain.enums.FeedScope;
 import com.gymnotes.security.UserPrincipal;
 import com.gymnotes.service.SocialService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,12 +50,37 @@ public class SocialController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/users/search")
+    @Operation(summary = "Buscar usuários", description = "Busca atletas pelo nome de usuário ou nome de exibição.")
+    public ResponseEntity<List<UserSearchResultDTO>> searchUsers(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(name = "q", defaultValue = "") String query,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(socialService.searchUsers(principal.getId(), query, pageable));
+    }
+
+    @GetMapping("/friends")
+    @Operation(summary = "Listar amigos", description = "Retorna as amizades aceitas do usuário autenticado.")
+    public ResponseEntity<List<UserSearchResultDTO>> getFriends(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(socialService.getFriends(principal.getId()));
+    }
+
+    @GetMapping("/friends/requests")
+    @Operation(summary = "Listar solicitações recebidas", description = "Retorna as solicitações de amizade pendentes para o usuário autenticado.")
+    public ResponseEntity<List<FriendRequestDTO>> getIncomingFriendRequests(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(socialService.getIncomingFriendRequests(principal.getId()));
+    }
+
     @GetMapping("/feed")
-    @Operation(summary = "Feed social", description = "Retorna a linha do tempo com treinos e refeições dos amigos com contagem de curtidas e comentários.")
+    @Operation(summary = "Feed social", description = "Retorna publicações públicas do feed global ou dos amigos, com busca por texto.")
     public ResponseEntity<List<FeedItemDTO>> getFeed(
             @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(name = "scope", defaultValue = "GLOBAL") FeedScope scope,
+            @RequestParam(name = "q", defaultValue = "") String query,
             @PageableDefault(size = 20) Pageable pageable) {
-        List<FeedItemDTO> feed = socialService.getFeed(principal.getId(), pageable);
+        List<FeedItemDTO> feed = socialService.getFeed(principal.getId(), scope, query, pageable);
         return ResponseEntity.ok(feed);
     }
 
@@ -66,4 +93,3 @@ public class SocialController {
         return ResponseEntity.ok().build();
     }
 }
-

@@ -1,0 +1,21 @@
+unit: api-nutrition
+bindings:
+  - type: route-declaration
+    name: "Nutrition REST routes under /api/v1/nutrition"
+    source_loc: "backend/src/main/java/com/gymnotes/controller/NutritionController.java:23"
+    target: "NutritionController"
+    must_appear_in_target: true
+    notes: "Four operations: food search/create, meal create, daily summary."
+  - type: annotation
+    name: "@DateTimeFormat(iso = ISO.DATE)"
+    source_loc: "backend/src/main/java/com/gymnotes/controller/NutritionController.java:60"
+    target: "GET /summary/daily date query parameter"
+    must_appear_in_target: true
+    notes: "Optional query date is parsed as ISO local date."
+  - type: annotation
+    name: "@SecurityRequirement(name = bearerAuth)"
+    source_loc: "backend/src/main/java/com/gymnotes/controller/NutritionController.java:27"
+    target: "Nutrition API routes"
+    must_appear_in_target: true
+    notes: "The route family is explicitly authenticated."
+runtime_config: []

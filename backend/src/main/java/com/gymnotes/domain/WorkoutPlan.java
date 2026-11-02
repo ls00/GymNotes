@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -37,6 +39,11 @@ public class WorkoutPlan {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Builder.Default
+    @OneToMany(mappedBy = "workoutPlan", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("exerciseOrder ASC, setOrder ASC")
+    private List<WorkoutPlanSet> sets = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         if (this.createdAt == null) {
@@ -46,5 +53,13 @@ public class WorkoutPlan {
             this.isActive = true;
         }
     }
-}
 
+    public void addSet(WorkoutPlanSet set) {
+        sets.add(set);
+        set.setWorkoutPlan(this);
+    }
+
+    public void clearSets() {
+        sets.clear();
+    }
+}

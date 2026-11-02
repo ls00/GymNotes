@@ -7,8 +7,10 @@ import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 
 export default function LoginPage() {
   const [isRegister, setIsRegister] = useState(false);
-  const [name, setName] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -21,13 +23,13 @@ export default function LoginPage() {
 
     try {
       if (isRegister) {
-        if (!name.trim()) {
-          setErrorMessage("Por favor, preencha seu nome.");
+        if (!displayName.trim() || !username.trim()) {
+          setErrorMessage("Preencha seu nome de exibição e nome de usuário.");
           return;
         }
-        await register({ name, email, password });
+        await register({ displayName, username, email, password });
       } else {
-        await login({ email, password });
+        await login({ identifier, password });
       }
     } catch (err: unknown) {
       if (err && typeof err === "object" && "response" in err) {
@@ -98,32 +100,59 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {isRegister && (
               <div>
-                <label htmlFor="register-name" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted">
-                  Nome Completo
+                <label htmlFor="register-display-name" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted">
+                  Nome de exibição
                 </label>
                 <input
                   type="text"
-                  id="register-name"
+                  id="register-display-name"
                   required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Seu nome"
+                  minLength={2}
+                  maxLength={150}
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Como você será apresentado"
                   className="min-h-12 w-full rounded-xl border border-border bg-surface px-3.5 py-3 text-sm text-white placeholder-muted outline-none transition focus:border-brand focus:ring-1 focus:ring-brand/20"
                 />
               </div>
             )}
 
+            {isRegister && (
+              <div>
+                <label htmlFor="register-username" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted">
+                  Nome de usuário
+                </label>
+                <input
+                  type="text"
+                  id="register-username"
+                  required
+                  minLength={3}
+                  maxLength={20}
+                  pattern="[A-Za-z0-9._]{3,20}"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="seu.usuario"
+                  autoComplete="username"
+                  className="min-h-12 w-full rounded-xl border border-border bg-surface px-3.5 py-3 text-sm text-white placeholder-muted outline-none transition focus:border-brand focus:ring-1 focus:ring-brand/20"
+                />
+                <p className="mt-1 text-[10px] text-muted">
+                  3–20 caracteres: letras, números, ponto ou sublinhado.
+                </p>
+              </div>
+            )}
+
             <div>
-              <label htmlFor="login-email" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted">
-                E-mail
+              <label htmlFor={isRegister ? "register-email" : "login-identifier"} className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted">
+                {isRegister ? "E-mail" : "E-mail ou nome de usuário"}
               </label>
               <input
-                type="email"
-                id="login-email"
+                type={isRegister ? "email" : "text"}
+                id={isRegister ? "register-email" : "login-identifier"}
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="atleta@gymnotes.com"
+                value={isRegister ? email : identifier}
+                onChange={(e) => isRegister ? setEmail(e.target.value) : setIdentifier(e.target.value)}
+                placeholder={isRegister ? "atleta@gymnotes.com" : "E-mail ou username"}
+                autoComplete={isRegister ? "email" : "username"}
                 className="min-h-12 w-full rounded-xl border border-border bg-surface px-3.5 py-3 text-sm text-white placeholder-muted outline-none transition focus:border-brand focus:ring-1 focus:ring-brand/20"
               />
             </div>

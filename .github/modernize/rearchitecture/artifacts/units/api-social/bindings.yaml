@@ -1,0 +1,27 @@
+unit: api-social
+bindings:
+  - type: route-declaration
+    name: "Social REST routes under /api/v1/social"
+    source_loc: "backend/src/main/java/com/gymnotes/controller/SocialController.java:24"
+    target: "SocialController"
+    must_appear_in_target: true
+    notes: "Friend request/respond, feed, and interactions routes."
+  - type: annotation
+    name: "@AuthenticationPrincipal UserPrincipal"
+    source_loc: "backend/src/main/java/com/gymnotes/controller/SocialController.java:34"
+    target: "Authenticated social operations"
+    must_appear_in_target: true
+    notes: "Actions use the authenticated user ID."
+  - type: listener
+    name: "STOMP WebSocket endpoints /ws"
+    source_loc: "backend/src/main/java/com/gymnotes/config/WebSocketConfig.java:25"
+    target: "WebSocketConfig"
+    must_appear_in_target: true
+    notes: "Registers SockJS and native WebSocket endpoints; simple broker prefixes /topic and /queue; user prefix /user."
+  - type: convention
+    name: "Notification destinations"
+    source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:303"
+    target: "SocialService.notifyUser"
+    must_appear_in_target: true
+    notes: "Sends to /topic/notifications/{recipientId} and /user/{recipientId}/queue/notifications."
+runtime_config: []

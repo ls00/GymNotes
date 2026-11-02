@@ -1,0 +1,9 @@
+unit: ui-nutrition
+commit: false
+candidate_splits:
+  - id: "frontend/src/app/(dashboard)/nutrition/page.tsx:15-461"
+    drivers: [concern_split]
+    rationale: "Daily totals and meal history are read-only views, while quick meal entry has its own modal focus, validation, search, and mutation state."
+    source_slice:
+      file: "frontend/src/app/(dashboard)/nutrition/page.tsx"
+      lines: [15, 461]

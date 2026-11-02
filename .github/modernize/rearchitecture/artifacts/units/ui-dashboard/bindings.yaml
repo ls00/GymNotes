@@ -1,0 +1,15 @@
+unit: ui-dashboard
+bindings:
+  - type: route-declaration
+    name: "App Router route group (dashboard)"
+    source_loc: "frontend/src/app/(dashboard)/layout.tsx:7"
+    target: "DashboardLayout"
+    must_appear_in_target: true
+    notes: "Wraps workouts, nutrition, and feed with the client-side token check."
+  - type: convention
+    name: "BottomNav and Header"
+    source_loc: "frontend/src/components/layout/BottomNav.tsx:46"
+    target: "Dashboard navigation"
+    must_appear_in_target: true
+    notes: "Links to /workouts, /nutrition, and /feed; responsive mobile and desktop presentation."
+runtime_config: []

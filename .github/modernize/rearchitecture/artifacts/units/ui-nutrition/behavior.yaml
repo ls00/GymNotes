@@ -1,0 +1,42 @@
+unit: ui-nutrition
+side_effects:
+  - source_loc: "frontend/src/app/(dashboard)/nutrition/page.tsx:61"
+    effect: "Submits one selected food with quantity and meal type; on success clears selection/search and shows a temporary success message."
+    must_preserve: true
+  - source_loc: "frontend/src/hooks/useNutrition.ts:32"
+    effect: "After meal creation, invalidate the daily-summary and social-feed queries."
+    must_preserve: true
+branches:
+  - source_loc: "frontend/src/app/(dashboard)/nutrition/page.tsx:63"
+    condition: "Quantity is non-finite or not greater than zero."
+    behavior: "Do not submit and show a quantity validation message."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/nutrition/page.tsx:67"
+    condition: "No food is selected."
+    behavior: "Do not submit and ask the user to select a search result."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/nutrition/page.tsx:34"
+    condition: "Quick-add dialog opens or closes."
+    behavior: "Focus the first input on open, return focus to trigger on close; Escape closes and Tab navigation is kept inside the dialog."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/nutrition/page.tsx:47"
+    condition: "No calorie goal or no summary data exists."
+    behavior: "Show the no-goal / unavailable state rather than a fabricated total or progress value."
+    must_preserve: true
+error_paths:
+  - source_loc: "frontend/src/app/(dashboard)/nutrition/page.tsx:85"
+    trigger: "Meal creation mutation rejects."
+    outcome: "Show an inline retry-oriented message and keep the dialog available."
+    contract: "Inline page/dialog error."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/nutrition/page.tsx:20"
+    trigger: "Daily summary or food search fails."
+    outcome: "Show unavailable/error state; summary includes explicit retry."
+    contract: "Page-level loading/error state."
+    must_preserve: true
+concurrency:
+  model: event-loop
+  tx_boundary:
+    source_loc: "frontend/src/hooks/useNutrition.ts:26"
+    scope: "No frontend database transaction; meal write is an asynchronous request to the api-nutrition transaction."
+    must_preserve: true

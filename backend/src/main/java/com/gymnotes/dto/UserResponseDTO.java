@@ -12,6 +12,7 @@ import java.util.UUID;
 public record UserResponseDTO(
     UUID id,
     String name,
+    String username,
     String email,
     UserRole role,
     String profilePictureUrl,
@@ -29,6 +30,7 @@ public record UserResponseDTO(
         return UserResponseDTO.builder()
             .id(user.getId())
             .name(user.getName())
+            .username(user.getUsername())
             .email(user.getEmail())
             .role(user.getRole())
             .profilePictureUrl(user.getProfilePictureUrl())

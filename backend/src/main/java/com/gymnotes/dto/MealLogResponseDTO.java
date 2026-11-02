@@ -18,6 +18,7 @@ public record MealLogResponseDTO(
     MealType mealType,
     Instant loggedAt,
     String photoUrl,
+    boolean isPublic,
     List<MealItemResponseDTO> items,
     BigDecimal totalCalories,
     BigDecimal totalProteinG,
@@ -59,6 +60,7 @@ public record MealLogResponseDTO(
             .mealType(log.getMealType())
             .loggedAt(log.getLoggedAt())
             .photoUrl(log.getPhotoUrl())
+            .isPublic(Boolean.TRUE.equals(log.getIsPublic()))
             .items(itemsDto)
             .totalCalories(totalCalories)
             .totalProteinG(totalProtein)
@@ -67,4 +69,3 @@ public record MealLogResponseDTO(
             .build();
     }
 }
-

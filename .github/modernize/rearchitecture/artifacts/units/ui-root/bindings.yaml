@@ -1,0 +1,9 @@
+unit: ui-root
+bindings:
+  - type: route-declaration
+    name: "App Router page /"
+    source_loc: "frontend/src/app/page.tsx:3"
+    target: "HomePage"
+    must_appear_in_target: true
+    notes: "Uses next/navigation redirect to route to /workouts."
+runtime_config: []

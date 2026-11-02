@@ -12,9 +12,11 @@ public record FriendRequestDTO(
     UUID friendshipId,
     UUID requesterId,
     String requesterName,
+    String requesterUsername,
     String requesterPhotoUrl,
     UUID addresseeId,
     String addresseeName,
+    String addresseeUsername,
     String addresseePhotoUrl,
     FriendshipStatus status,
     Instant createdAt
@@ -27,13 +29,14 @@ public record FriendRequestDTO(
             .friendshipId(friendship.getId())
             .requesterId(friendship.getRequester().getId())
             .requesterName(friendship.getRequester().getName())
+            .requesterUsername(friendship.getRequester().getUsername())
             .requesterPhotoUrl(friendship.getRequester().getProfilePictureUrl())
             .addresseeId(friendship.getAddressee().getId())
             .addresseeName(friendship.getAddressee().getName())
+            .addresseeUsername(friendship.getAddressee().getUsername())
             .addresseePhotoUrl(friendship.getAddressee().getProfilePictureUrl())
             .status(friendship.getStatus())
             .createdAt(friendship.getCreatedAt())
             .build();
     }
 }
-

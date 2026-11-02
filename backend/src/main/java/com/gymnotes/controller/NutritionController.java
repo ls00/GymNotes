@@ -2,6 +2,7 @@ package com.gymnotes.controller;
 
 import com.gymnotes.dto.*;
 import com.gymnotes.security.UserPrincipal;
+import com.gymnotes.service.NutritionGoalService;
 import com.gymnotes.service.NutritionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -27,6 +28,30 @@ import java.time.LocalDate;
 public class NutritionController {
 
     private final NutritionService nutritionService;
+    private final NutritionGoalService nutritionGoalService;
+
+    @GetMapping("/progress")
+    @Operation(summary = "Acompanhar progresso nutricional", description = "Retorna metas calculadas, histórico recente de peso e consumo diário.")
+    public ResponseEntity<NutritionProgressDTO> getProgress(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(nutritionGoalService.getProgress(principal.getId()));
+    }
+
+    @PutMapping("/goal")
+    @Operation(summary = "Definir objetivo nutricional", description = "Cria ou atualiza o objetivo e calcula metas diárias estimadas.")
+    public ResponseEntity<NutritionGoalResponseDTO> saveGoal(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody CreateNutritionGoalDTO request) {
+        return ResponseEntity.ok(nutritionGoalService.saveGoal(principal.getId(), request));
+    }
+
+    @PutMapping("/weight-entries")
+    @Operation(summary = "Registrar pesagem", description = "Registra ou atualiza uma pesagem para a data informada.")
+    public ResponseEntity<WeightEntryResponseDTO> saveWeightEntry(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody SaveWeightEntryDTO request) {
+        return ResponseEntity.ok(nutritionGoalService.saveWeightEntry(principal.getId(), request));
+    }
 
     @GetMapping("/foods/search")
     @Operation(summary = "Buscar alimentos", description = "Busca paginada de alimentos por nome ou marca.")
@@ -63,4 +88,3 @@ public class NutritionController {
         return ResponseEntity.ok(summary);
     }
 }
-

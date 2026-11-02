@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNutrition } from "@/hooks/useNutrition";
 import { Plus, Utensils, Flame, Check } from "lucide-react";
 import type { Food, LogMealRequest } from "@/types";
+import NutritionGoalDashboard from "./NutritionGoalDashboard";
 
 const mealTypeLabels: Record<LogMealRequest["mealType"], string> = {
   BREAKFAST: "Café da manhã",
@@ -31,6 +32,7 @@ export default function NutritionPage() {
   const [foodQuery, setFoodQuery] = useState("");
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [mealType, setMealType] = useState<LogMealRequest["mealType"]>("SNACK");
+  const [isMealPublic, setIsMealPublic] = useState(false);
   const { data: foods = [], isLoading: foodsLoading, isError: foodsError } =
     useSearchFoods(foodQuery);
   const quickAddTriggerRef = useRef<HTMLButtonElement>(null);
@@ -56,7 +58,9 @@ export default function NutritionPage() {
   const totalProtein = summary ? Number(summary.totalProteinG) : null;
   const proteinGoal = summary?.proteinGoalG ?? null;
   const totalCarbs = summary ? Number(summary.totalCarbsG) : null;
+  const carbsGoal = summary?.carbsGoalG ?? null;
   const totalFats = summary ? Number(summary.totalFatsG) : null;
+  const fatsGoal = summary?.fatsGoalG ?? null;
 
   const handleQuickLog = async () => {
     setMealError("");
@@ -72,6 +76,7 @@ export default function NutritionPage() {
     try {
       await logMealMutation.mutateAsync({
         mealType,
+        isPublic: isMealPublic,
         items: [
           {
             foodId: selectedFood.id,
@@ -83,6 +88,7 @@ export default function NutritionPage() {
       setShowQuickAdd(false);
       setSelectedFood(null);
       setFoodQuery("");
+      setIsMealPublic(false);
       setTimeout(() => setMealSuccess(false), 3000);
     } catch {
       setMealError(
@@ -130,6 +136,8 @@ export default function NutritionPage() {
           {mealError}
         </div>
       )}
+
+      <NutritionGoalDashboard />
 
       {/* Calories Overview Card */}
       <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
@@ -242,7 +250,9 @@ export default function NutritionPage() {
           <div className="mt-1 font-mono text-base font-bold tabular-nums text-white sm:text-lg">
             {totalCarbs === null ? "—" : `${totalCarbs}g`}
           </div>
-          <div className="mt-1 text-[9px] text-muted sm:text-[10px]">Sem meta definida</div>
+          <div className="mt-1 text-[9px] text-muted sm:text-[10px]">
+            {carbsGoal ? `Meta: ${carbsGoal}g` : "Sem meta definida"}
+          </div>
         </div>
 
         {/* Fats */}
@@ -251,7 +261,9 @@ export default function NutritionPage() {
           <div className="mt-1 font-mono text-base font-bold tabular-nums text-white sm:text-lg">
             {totalFats === null ? "—" : `${totalFats}g`}
           </div>
-          <div className="mt-1 text-[9px] text-muted sm:text-[10px]">Sem meta definida</div>
+          <div className="mt-1 text-[9px] text-muted sm:text-[10px]">
+            {fatsGoal ? `Meta: ${fatsGoal}g` : "Sem meta definida"}
+          </div>
         </div>
       </div>
       </section>
@@ -427,6 +439,18 @@ export default function NutritionPage() {
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-mono text-white"
                 />
               </div>
+              <label className="flex items-start gap-2 rounded-lg border border-border p-3 text-xs text-muted">
+                <input
+                  type="checkbox"
+                  checked={isMealPublic}
+                  onChange={(event) => setIsMealPublic(event.target.checked)}
+                  className="mt-0.5 accent-[var(--brand)]"
+                />
+                <span>
+                  Compartilhar esta refeição no feed global e no feed dos amigos.
+                  Refeições privadas continuam visíveis apenas para você.
+                </span>
+              </label>
             </div>
 
             {mealError && (

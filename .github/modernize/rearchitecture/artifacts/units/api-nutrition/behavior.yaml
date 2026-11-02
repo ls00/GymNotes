@@ -1,0 +1,39 @@
+unit: api-nutrition
+side_effects:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/NutritionService.java:41"
+    effect: "Creates a food catalog entry with nutrient values rounded to two decimal places and isVerified=false."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/NutritionService.java:58"
+    effect: "Persists a user's meal log and all child items; calculated totals are returned from the saved model."
+    must_preserve: true
+branches:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/NutritionService.java:60"
+    condition: "loggedAt is omitted."
+    behavior: "Use the current instant."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/NutritionService.java:86"
+    condition: "Summary date is omitted."
+    behavior: "Use current date in UTC; otherwise compute the selected UTC day's totals."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/NutritionService.java:113"
+    condition: "The user has no calorie/protein goal."
+    behavior: "Leave goal and remaining-goal fields null."
+    must_preserve: true
+error_paths:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/NutritionService.java:69"
+    trigger: "Food ID in a meal item does not exist."
+    outcome: "Abort the entire meal write and return HTTP 404."
+    contract: "ErrorResponseDTO."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/controller/NutritionController.java:49"
+    trigger: "Request fails bean validation or caller lacks valid JWT."
+    outcome: "Return HTTP 400 or HTTP 401, respectively."
+    contract: "Standard validation response or Spring Security unauthorized response."
+    must_preserve: true
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: "backend/src/main/java/com/gymnotes/service/NutritionService.java:57"
+    scope: "Food/user lookups and meal log plus cascading item persistence execute in a single transaction."
+    isolation: "Spring transaction default; no explicit isolation configured."
+    must_preserve: true

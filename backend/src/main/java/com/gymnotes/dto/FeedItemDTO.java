@@ -12,6 +12,7 @@ public record FeedItemDTO(
     String activityType,
     UUID authorId,
     String authorName,
+    String authorUsername,
     String authorPhotoUrl,
     Instant createdAt,
     String title,
@@ -24,4 +25,3 @@ public record FeedItemDTO(
     boolean isLikedByMe,
     List<CommentResponseDTO> recentComments
 ) {}
-

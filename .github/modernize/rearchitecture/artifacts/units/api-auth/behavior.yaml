@@ -1,0 +1,40 @@
+unit: api-auth
+side_effects:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/AuthService.java:26"
+    effect: "Registration lowercases/trims email, trims name, hashes the password with BCrypt, and persists the new user."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/AuthService.java:40"
+    effect: "Successful registration and login return a signed access token and a refresh token."
+    must_preserve: true
+branches:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/AuthService.java:27"
+    condition: "The normalized email already exists."
+    behavior: "Reject registration with EmailAlreadyExistsException; the REST advice maps it to HTTP 409."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/AuthService.java:47"
+    condition: "Email is absent or BCrypt password comparison fails."
+    behavior: "Reject login with the same invalid-credentials message."
+    must_preserve: true
+error_paths:
+  - source_loc: "backend/src/main/java/com/gymnotes/controller/AuthController.java:28"
+    trigger: "Register request violates bean validation."
+    outcome: "Return the standard JSON validation response with HTTP 400."
+    contract: "ErrorResponseDTO with fieldErrors."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/AuthService.java:27"
+    trigger: "Email is already registered."
+    outcome: "Return HTTP 409 Conflict."
+    contract: "ErrorResponseDTO."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/AuthService.java:48"
+    trigger: "Credentials do not match."
+    outcome: "Return HTTP 401 Unauthorized."
+    contract: "ErrorResponseDTO; login errors use a shared message."
+    must_preserve: true
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: "backend/src/main/java/com/gymnotes/service/AuthService.java:25"
+    scope: "Registration user persistence and response assembly are in one transaction; login is read-only."
+    isolation: "Spring transaction default; no explicit isolation configured."
+    must_preserve: true

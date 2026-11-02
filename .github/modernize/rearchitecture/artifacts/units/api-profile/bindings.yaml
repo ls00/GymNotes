@@ -1,0 +1,21 @@
+unit: api-profile
+bindings:
+  - type: route-declaration
+    name: "GET /api/v1/users/me"
+    source_loc: "backend/src/main/java/com/gymnotes/controller/UserController.java:25"
+    target: "UserController.getMyProfile"
+    must_appear_in_target: true
+    notes: "Uses @AuthenticationPrincipal UserPrincipal."
+  - type: route-declaration
+    name: "PUT /api/v1/users/me"
+    source_loc: "backend/src/main/java/com/gymnotes/controller/UserController.java:32"
+    target: "UserController.updateMyProfile"
+    must_appear_in_target: true
+    notes: "Authenticated JSON request with bean validation."
+  - type: annotation
+    name: "@SecurityRequirement(name = bearerAuth)"
+    source_loc: "backend/src/main/java/com/gymnotes/controller/UserController.java:20"
+    target: "Profile API routes"
+    must_appear_in_target: true
+    notes: "OpenAPI declares bearer JWT requirement."
+runtime_config: []

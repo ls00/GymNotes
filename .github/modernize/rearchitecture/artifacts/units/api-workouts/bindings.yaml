@@ -1,0 +1,21 @@
+unit: api-workouts
+bindings:
+  - type: route-declaration
+    name: "Workout REST routes under /api/v1/workouts"
+    source_loc: "backend/src/main/java/com/gymnotes/controller/WorkoutController.java:23"
+    target: "WorkoutController"
+    must_appear_in_target: true
+    notes: "Six operations: plans POST/GET; exercise search GET; sessions POST/history GET; exercise progress GET."
+  - type: annotation
+    name: "@Valid and @AuthenticationPrincipal"
+    source_loc: "backend/src/main/java/com/gymnotes/controller/WorkoutController.java:33"
+    target: "Plan/session writes and caller ownership"
+    must_appear_in_target: true
+    notes: "Writes validate DTOs; user-specific actions use the authenticated principal."
+  - type: annotation
+    name: "@SecurityRequirement(name = bearerAuth)"
+    source_loc: "backend/src/main/java/com/gymnotes/controller/WorkoutController.java:27"
+    target: "Workout API routes"
+    must_appear_in_target: true
+    notes: "Spring Security requires authentication for all non-public API routes."
+runtime_config: []

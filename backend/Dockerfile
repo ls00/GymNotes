@@ -12,5 +12,7 @@ RUN useradd --system --uid 10001 spring
 COPY --from=build --chown=spring:spring /app/target/gymnotes-backend-0.0.1-SNAPSHOT.jar app.jar
 USER spring
 
+ENV SPRING_PROFILES_ACTIVE=prod
+
 EXPOSE 8080
 ENTRYPOINT ["java", "-XX:TieredStopAtLevel=1", "-jar", "/app/app.jar"]

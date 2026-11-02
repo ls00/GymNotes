@@ -1,0 +1,14 @@
+unit: ui-root
+side_effects: []
+branches:
+  - source_loc: "frontend/src/app/page.tsx:4"
+    condition: "The root route is requested."
+    behavior: "Redirect to /workouts."
+    must_preserve: true
+error_paths: []
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: "frontend/src/app/page.tsx:3"
+    scope: "No persistence or asynchronous work; route handling immediately redirects."
+    must_preserve: true

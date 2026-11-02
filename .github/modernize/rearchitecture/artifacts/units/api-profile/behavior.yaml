@@ -1,0 +1,32 @@
+unit: api-profile
+side_effects:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/UserService.java:27"
+    effect: "Updates the authenticated user's supplied profile fields and persists the user."
+    must_preserve: true
+branches:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/UserService.java:31"
+    condition: "Name is nonblank."
+    behavior: "Trim and apply the new name; blank or null name leaves the existing value unchanged."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/UserService.java:34"
+    condition: "Each optional profile/goal field is non-null."
+    behavior: "Apply only the supplied non-null value; null means keep the old value."
+    must_preserve: true
+error_paths:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/UserService.java:46"
+    trigger: "Authenticated principal's user ID is not found."
+    outcome: "Return HTTP 404."
+    contract: "ErrorResponseDTO."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/controller/UserController.java:34"
+    trigger: "Update request violates bean validation or caller has no valid JWT."
+    outcome: "Return HTTP 400 for validation or HTTP 401 for missing/invalid authentication."
+    contract: "ErrorResponseDTO for controller validation; security entry point for authentication."
+    must_preserve: true
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: "backend/src/main/java/com/gymnotes/service/UserService.java:27"
+    scope: "Profile update is one transaction; profile retrieval is read-only."
+    isolation: "Spring transaction default; no explicit isolation configured."
+    must_preserve: true

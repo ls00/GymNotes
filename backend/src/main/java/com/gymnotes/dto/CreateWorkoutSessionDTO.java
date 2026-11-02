@@ -3,6 +3,7 @@ package com.gymnotes.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
@@ -27,6 +28,12 @@ public record CreateWorkoutSessionDTO(
 
     @NotEmpty(message = "A sessão deve conter ao menos uma série registrada.")
     @Valid
-    List<WorkoutSetDTO> sets
-) {}
+    List<WorkoutSetDTO> sets,
 
+    @Size(max = 1_500_000, message = "A foto do treino excede o tamanho permitido.")
+    @Pattern(
+        regexp = "^(data:image/jpeg;base64,[A-Za-z0-9+/]+={0,2}|https://[a-zA-Z0-9-]+\\.public\\.blob\\.vercel-storage\\.com/\\S+)$",
+        message = "A foto deve ser um JPEG ou uma imagem pública do Vercel Blob."
+    )
+    String photoUrl
+) {}

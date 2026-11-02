@@ -1,0 +1,15 @@
+unit: ui-nutrition
+bindings:
+  - type: route-declaration
+    name: "App Router page /nutrition"
+    source_loc: "frontend/src/app/(dashboard)/nutrition/page.tsx:15"
+    target: "NutritionPage"
+    must_appear_in_target: true
+    notes: "Client page renders summary, macros, meal list, and quick-entry dialog."
+  - type: convention
+    name: "TanStack Query hooks"
+    source_loc: "frontend/src/hooks/useNutrition.ts:7"
+    target: "Nutrition API calls and cache invalidation"
+    must_appear_in_target: true
+    notes: "Date-scoped summary, debounced-by-query search eligibility, and meal mutation."
+runtime_config: []

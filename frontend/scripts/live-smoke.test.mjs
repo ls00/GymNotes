@@ -25,12 +25,35 @@ test("site login page is available", async () => {
 test("OpenAPI lists the application endpoints", async () => {
   const response = await fetch(`${apiUrl}/v3/api-docs`, { signal: requestTimeout() });
   const specification = await response.json();
+  const expectedPaths = [
+    "/api/v1/auth/login",
+    "/api/v1/auth/register",
+    "/api/v1/users/me",
+    "/api/v1/workouts/plans",
+    "/api/v1/workouts/sessions",
+    "/api/v1/workouts/sessions/history",
+    "/api/v1/social/feed",
+    "/api/v1/nutrition/progress",
+    "/api/v1/nutrition/goal",
+    "/api/v1/nutrition/weight-entries",
+  ];
 
   assert.equal(response.status, 200);
-  assert.equal(Object.keys(specification.paths).length, 16);
+  for (const path of expectedPaths) {
+    assert.ok(specification.paths[path], `OpenAPI is missing ${path}`);
+  }
 });
 
-test("OpenAPI advertises HTTPS for the deployed API", async () => {
+test("OpenAPI advertises HTTPS for the deployed API", async (t) => {
+  const apiHost = new URL(apiUrl);
+  if (
+    apiHost.protocol === "http:" &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(apiHost.hostname)
+  ) {
+    t.skip("HTTPS is required in production, not for a local API");
+    return;
+  }
+
   const response = await fetch(`${apiUrl}/v3/api-docs`, { signal: requestTimeout() });
   const specification = await response.json();
 
@@ -42,7 +65,7 @@ test("login rejects unknown credentials without creating an account", async () =
     method: "POST",
     headers: jsonHeaders(),
     body: JSON.stringify({
-      email: "gymnotes-smoke-no-account@example.invalid",
+      identifier: "gymnotes-smoke-no-account@example.invalid",
       password: "invalid-password",
     }),
     signal: requestTimeout(),
@@ -55,7 +78,12 @@ test("registration validates invalid input before persistence", async () => {
   const response = await fetch(`${apiBase}/auth/register`, {
     method: "POST",
     headers: jsonHeaders(),
-    body: JSON.stringify({ name: "", email: "invalid", password: "x" }),
+    body: JSON.stringify({
+      username: "x",
+      displayName: "",
+      email: "invalid",
+      password: "x",
+    }),
     signal: requestTimeout(),
   });
   const body = await response.json();
@@ -95,6 +123,9 @@ test("protected API endpoints reject anonymous requests", async (t) => {
     ["POST", "/nutrition/foods", {}],
     ["POST", "/nutrition/meals", {}],
     ["GET", "/nutrition/summary/daily"],
+    ["GET", "/nutrition/progress"],
+    ["PUT", "/nutrition/goal", {}],
+    ["PUT", "/nutrition/weight-entries", {}],
     ["POST", "/social/friends/request/00000000-0000-4000-8000-000000000001"],
     ["PUT", "/social/friends/respond/00000000-0000-4000-8000-000000000001"],
     ["GET", "/social/feed"],
@@ -120,6 +151,17 @@ test("PWA manifest is served as JSON", async () => {
 
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") || "", /application\/(manifest\+)?json/);
+});
+
+test("workout photo uploads reject anonymous requests", async () => {
+  const response = await fetch(`${webUrl}/api/workout-photo`, {
+    method: "POST",
+    headers: { "Content-Type": "image/jpeg" },
+    body: new Uint8Array(),
+    signal: requestTimeout(),
+  });
+
+  assert.equal(response.status, 401);
 });
 
 for (const [path, size] of [

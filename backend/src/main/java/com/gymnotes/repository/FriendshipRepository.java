@@ -28,5 +28,7 @@ public interface FriendshipRepository extends JpaRepository<Friendship, UUID> {
     List<Friendship> findByAddresseeIdAndStatusOrderByCreatedAtDesc(UUID addresseeId, FriendshipStatus status);
 
     List<Friendship> findByRequesterIdAndStatusOrderByCreatedAtDesc(UUID requesterId, FriendshipStatus status);
-}
 
+    List<Friendship> findByAddresseeIdAndStatusOrderByCreatedAtAsc(UUID addresseeId, FriendshipStatus status);
+
+}

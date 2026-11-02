@@ -1,0 +1,9 @@
+unit: api-workouts
+commit: false
+candidate_splits:
+  - id: "backend/src/main/java/com/gymnotes/service/WorkoutService.java:36-64"
+    drivers: [concern_split]
+    rationale: "Plan lifecycle, exercise catalog search, session recording, and progress queries have separate workflows and data access paths within one service."
+    source_slice:
+      file: "backend/src/main/java/com/gymnotes/service/WorkoutService.java"
+      lines: [36, 64]

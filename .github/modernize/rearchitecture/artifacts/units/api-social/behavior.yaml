@@ -1,0 +1,56 @@
+unit: api-social
+side_effects:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:45"
+    effect: "Creates or reopens a pending friendship request and emits a notification to the addressee."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:88"
+    effect: "Persists the accepted/rejected friendship status and notifies the requester."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:207"
+    effect: "Adds/removes likes or saves comments; new interactions may emit a notification to the activity author."
+    must_preserve: true
+branches:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:46"
+    condition: "Request targets self, an accepted friend, or an already-pending pair."
+    behavior: "Reject the operation; a previously rejected ordered pair is reset to pending."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:93"
+    condition: "Responder is not the request addressee or request is no longer pending."
+    behavior: "Reject response; only the addressee may respond once."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:118"
+    condition: "Feed is requested."
+    behavior: "Combine current user's and accepted friends' workout/meal activities, sort newest first, and page the combined list."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:239"
+    condition: "A matching like already exists."
+    behavior: "Delete the existing like (toggle); otherwise insert a like."
+    must_preserve: true
+error_paths:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:47"
+    trigger: "Self-request, duplicate request/state, invalid target or empty comment."
+    outcome: "The service throws IllegalArgumentException/IllegalStateException; the global advice currently handles these through its generic HTTP 500 fallback."
+    contract: "Current generic ErrorResponseDTO 500 behavior; no specialized domain mapping is declared."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:93"
+    trigger: "Caller is not the addressee of a friendship request."
+    outcome: "Return HTTP 403."
+    contract: "ErrorResponseDTO."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:122"
+    trigger: "Caller lacks a valid JWT or target resource does not exist."
+    outcome: "Return HTTP 401 or HTTP 404."
+    contract: "Security unauthorized response or ErrorResponseDTO."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:297"
+    trigger: "STOMP notification send throws."
+    outcome: "Log the failure; the REST operation does not surface a notification-send error."
+    contract: "No notification-delivery guarantee is returned in the REST response."
+    must_preserve: true
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: "backend/src/main/java/com/gymnotes/service/SocialService.java:44"
+    scope: "Friendship and interaction writes are transactional; feed assembly is read-only. Notification delivery is attempted within service execution."
+    isolation: "Spring transaction default; no explicit isolation configured."
+    must_preserve: true

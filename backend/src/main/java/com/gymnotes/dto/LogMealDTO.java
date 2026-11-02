@@ -18,8 +18,9 @@ public record LogMealDTO(
     @Size(max = 500, message = "A URL da foto deve ter no máximo 500 caracteres.")
     String photoUrl,
 
+    Boolean isPublic,
+
     @NotEmpty(message = "A refeição deve conter ao menos um alimento.")
     @Valid
     List<MealItemRequestDTO> items
 ) {}
-

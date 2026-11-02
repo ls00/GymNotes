@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useFeed } from "@/hooks/useFeed";
-import type { FeedItem, InteractionRequest } from "@/types";
+import type { FeedItem, FeedScope, InteractionRequest } from "@/types";
 import {
+  Check,
   Flame,
   MessageCircle,
   Share2,
@@ -11,6 +13,10 @@ import {
   Utensils,
   Send,
   Sparkles,
+  Search,
+  UserPlus,
+  Users,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -60,9 +66,34 @@ function getActivityStats(post: FeedItem) {
 }
 
 export default function FeedPage() {
-  const { useSocialFeed, useInteract } = useFeed();
-  const { data: posts = [], isLoading, isError, isFetching, refetch } = useSocialFeed();
+  const {
+    useSocialFeed,
+    useSearchUsers,
+    useIncomingFriendRequests,
+    useInteract,
+    useSendFriendRequest,
+    useRespondToFriendRequest,
+  } = useFeed();
+  const [scope, setScope] = useState<FeedScope>("GLOBAL");
+  const [feedQuery, setFeedQuery] = useState("");
+  const [userQuery, setUserQuery] = useState("");
+  const [friendError, setFriendError] = useState("");
+  const {
+    data: posts = [],
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useSocialFeed(0, 20, scope, feedQuery);
+  const { data: users = [], isLoading: usersLoading, isError: usersError } =
+    useSearchUsers(userQuery);
+  const {
+    data: friendRequests = [],
+    isError: friendRequestsError,
+  } = useIncomingFriendRequests();
   const interactMutation = useInteract();
+  const sendFriendRequestMutation = useSendFriendRequest();
+  const respondToFriendRequestMutation = useRespondToFriendRequest();
 
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
@@ -136,6 +167,24 @@ export default function FeedPage() {
     }
   };
 
+  const handleFriendRequest = async (userId: string) => {
+    setFriendError("");
+    try {
+      await sendFriendRequestMutation.mutateAsync(userId);
+    } catch {
+      setFriendError("Não foi possível enviar a solicitação. Tente novamente.");
+    }
+  };
+
+  const handleFriendResponse = async (friendshipId: string, accept: boolean) => {
+    setFriendError("");
+    try {
+      await respondToFriendRequestMutation.mutateAsync({ friendshipId, accept });
+    } catch {
+      setFriendError("Não foi possível responder à solicitação. Tente novamente.");
+    }
+  };
+
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pt-6 sm:px-6 md:px-0 md:pt-0">
       <header className="mb-6 rounded-2xl border border-border bg-surface p-5 sm:p-6">
@@ -148,10 +197,168 @@ export default function FeedPage() {
             Feed de atividades
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Treinos e refeições compartilhados por você e seus amigos.
+            Descubra atividades públicas e acompanhe as publicações dos seus amigos.
           </p>
         </div>
       </header>
+
+      <section className="mb-4 rounded-2xl border border-border bg-surface p-4 sm:p-5" aria-label="Filtros do feed">
+        <div className="grid gap-4 md:grid-cols-[auto_1fr] md:items-end">
+          <div>
+            <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-muted">
+              Feed
+            </label>
+            <div className="flex rounded-xl border border-border bg-white/[0.03] p-1">
+              {([
+                ["GLOBAL", "Global"],
+                ["FRIENDS", "Amigos"],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setScope(value)}
+                  aria-pressed={scope === value}
+                  className={`min-h-10 rounded-lg px-4 text-xs font-semibold transition ${
+                    scope === value ? "bg-brand text-rich" : "text-muted hover:text-white"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label htmlFor="feed-search" className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-muted">
+              Buscar publicações
+            </label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <input
+                id="feed-search"
+                type="search"
+                value={feedQuery}
+                onChange={(event) => setFeedQuery(event.target.value)}
+                placeholder="Exercícios, alimentos ou pessoas"
+                className="min-h-11 w-full rounded-xl border border-border bg-white/[0.03] py-2 pl-10 pr-3 text-sm text-white placeholder-muted outline-none transition focus:border-brand"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="mb-6 rounded-2xl border border-border bg-surface p-4 sm:p-5" aria-label="Encontrar amigos">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-brand" />
+          <h2 className="text-sm font-bold text-white">Encontrar pessoas</h2>
+        </div>
+        <div className="relative mt-3">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <input
+            type="search"
+            value={userQuery}
+            onChange={(event) => setUserQuery(event.target.value)}
+            placeholder="Busque por nome ou username"
+            aria-label="Buscar pessoas por nome ou username"
+            className="min-h-11 w-full rounded-xl border border-border bg-white/[0.03] py-2 pl-10 pr-3 text-sm text-white placeholder-muted outline-none transition focus:border-brand"
+          />
+        </div>
+        {friendRequestsError && (
+          <p role="alert" className="mt-3 text-xs text-white">
+            Não foi possível carregar as solicitações de amizade.
+          </p>
+        )}
+        {friendRequests.length > 0 && (
+          <div className="mt-4 border-t border-border pt-3">
+            <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted">
+              Solicitações recebidas
+            </h3>
+            <ul className="space-y-2">
+              {friendRequests.map((request) => (
+                <li key={request.friendshipId} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/[0.03] p-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">{request.requesterName}</p>
+                    <p className="text-xs text-muted">@{request.requesterUsername}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleFriendResponse(request.friendshipId, false)}
+                      disabled={respondToFriendRequestMutation.isPending}
+                      className="flex min-h-9 items-center gap-1 rounded-lg border border-border px-3 text-xs text-muted hover:text-white disabled:opacity-50"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Recusar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleFriendResponse(request.friendshipId, true)}
+                      disabled={respondToFriendRequestMutation.isPending}
+                      className="flex min-h-9 items-center gap-1 rounded-lg bg-brand px-3 text-xs font-semibold text-rich disabled:opacity-50"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      Aceitar
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {userQuery.trim().length >= 2 && (
+          <div className="mt-4 border-t border-border pt-3">
+            {usersError && (
+              <p role="alert" className="text-xs text-white">Não foi possível buscar usuários.</p>
+            )}
+            {usersLoading && <p className="text-xs text-muted">Buscando pessoas…</p>}
+            {!usersLoading && !usersError && users.length === 0 && (
+              <p className="text-xs text-muted">Nenhuma pessoa encontrada.</p>
+            )}
+            <ul className="space-y-2">
+              {users.map((user) => (
+                <li key={user.userId} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/[0.03] p-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">{user.displayName}</p>
+                    <p className="text-xs text-muted">@{user.username}</p>
+                  </div>
+                  {user.friendshipStatus === "NONE" && (
+                    <button
+                      type="button"
+                      onClick={() => void handleFriendRequest(user.userId)}
+                      disabled={sendFriendRequestMutation.isPending}
+                      className="flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-semibold text-white transition hover:border-brand disabled:opacity-50"
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                      Adicionar
+                    </button>
+                  )}
+                  {user.friendshipStatus === "PENDING_SENT" && (
+                    <span className="text-xs text-muted">Solicitação enviada</span>
+                  )}
+                  {user.friendshipStatus === "PENDING_RECEIVED" && user.friendshipId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (user.friendshipId) {
+                          void handleFriendResponse(user.friendshipId, true);
+                        }
+                      }}
+                      disabled={respondToFriendRequestMutation.isPending}
+                      className="flex min-h-9 items-center gap-1 rounded-lg bg-brand px-3 text-xs font-semibold text-rich disabled:opacity-50"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      Aceitar solicitação
+                    </button>
+                  )}
+                  {user.friendshipStatus === "ACCEPTED" && (
+                    <span className="text-xs font-semibold text-brand">Amigos</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {friendError && <p role="alert" className="mt-3 text-xs text-white">{friendError}</p>}
+      </section>
 
       {isError && (
         <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-4 text-sm text-white">
@@ -205,6 +412,9 @@ export default function FeedPage() {
                     {post.authorName}
                   </div>
                   <div className="mt-0.5 truncate text-[10px] text-muted">
+                    @{post.authorUsername}
+                  </div>
+                  <div className="truncate text-[10px] text-muted">
                     <time dateTime={post.createdAt}>
                       {new Date(post.createdAt).toLocaleString("pt-BR")}
                     </time>
@@ -242,6 +452,18 @@ export default function FeedPage() {
               <p className="mt-2 text-sm leading-relaxed text-muted">
                 {post.description || "Atividade compartilhada."}
               </p>
+              {post.photoUrl && (
+                <Image
+                  src={post.photoUrl}
+                  alt={`Foto de ${post.title}`}
+                  width={1280}
+                  height={720}
+                  unoptimized
+                  loading="lazy"
+                  decoding="async"
+                  className="mt-4 max-h-[28rem] w-full rounded-xl border border-border object-cover"
+                />
+              )}
             </div>
 
             {/* Metrics Chips */}

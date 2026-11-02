@@ -1,6 +1,7 @@
 package com.gymnotes.dto;
 
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -8,6 +9,10 @@ import java.math.BigDecimal;
 public record UpdateProfileDTO(
     @Size(min = 2, max = 150, message = "O nome deve ter entre 2 e 150 caracteres.")
     String name,
+
+    @Size(min = 3, max = 20, message = "O nome de usuário deve ter entre 3 e 20 caracteres.")
+    @Pattern(regexp = "^[a-zA-Z0-9._]+$", message = "Use apenas letras, números, ponto e sublinhado no nome de usuário.")
+    String username,
 
     @Size(max = 500, message = "A URL da foto deve ter no máximo 500 caracteres.")
     String profilePictureUrl,
@@ -24,4 +29,3 @@ public record UpdateProfileDTO(
     @Positive(message = "A meta diária de proteínas deve ser positiva.")
     BigDecimal dailyProteinGoalG
 ) {}
-

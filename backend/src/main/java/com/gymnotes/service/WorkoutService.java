@@ -3,6 +3,7 @@ package com.gymnotes.service;
 import com.gymnotes.domain.Exercise;
 import com.gymnotes.domain.User;
 import com.gymnotes.domain.WorkoutPlan;
+import com.gymnotes.domain.WorkoutPlanSet;
 import com.gymnotes.domain.WorkoutSession;
 import com.gymnotes.domain.WorkoutSet;
 import com.gymnotes.dto.*;
@@ -19,7 +20,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -43,13 +46,26 @@ public class WorkoutService {
                 .isActive(true)
                 .build();
 
+        replacePlanSets(plan, request.exercises());
         WorkoutPlan savedPlan = workoutPlanRepository.save(plan);
         return WorkoutPlanDTO.fromEntity(savedPlan);
     }
 
+    @Transactional
+    public WorkoutPlanDTO updatePlan(UUID userId, UUID planId, CreateWorkoutPlanDTO request) {
+        WorkoutPlan plan = workoutPlanRepository.findByIdAndUserId(planId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ficha de treino não encontrada: " + planId));
+
+        plan.setName(request.name().trim());
+        plan.setDescription(request.description());
+        replacePlanSets(plan, request.exercises());
+
+        return WorkoutPlanDTO.fromEntity(workoutPlanRepository.save(plan));
+    }
+
     @Transactional(readOnly = true)
     public List<WorkoutPlanDTO> getUserPlans(UUID userId) {
-        return workoutPlanRepository.findByUserIdAndIsActiveTrueOrderByCreatedAtDesc(userId)
+        return workoutPlanRepository.findActivePlansWithSetsByUserId(userId)
                 .stream()
                 .map(WorkoutPlanDTO::fromEntity)
                 .toList();
@@ -79,9 +95,10 @@ public class WorkoutService {
                 .workoutPlan(workoutPlan)
                 .title(request.title().trim())
                 .notes(request.notes())
+                .photoUrl(request.photoUrl())
                 .startedAt(request.startedAt() != null ? request.startedAt() : Instant.now())
                 .endedAt(request.endedAt() != null ? request.endedAt() : Instant.now())
-                .isPublic(request.isPublic() != null ? request.isPublic() : true)
+                .isPublic(Boolean.TRUE.equals(request.isPublic()))
                 .build();
 
         for (WorkoutSetDTO setDto : request.sets()) {
@@ -134,5 +151,37 @@ public class WorkoutService {
     private User findUserById(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com o ID: " + userId));
+    }
+
+    private void replacePlanSets(WorkoutPlan plan, List<WorkoutPlanExerciseDTO> plannedExercises) {
+        plan.clearSets();
+        if (plannedExercises == null || plannedExercises.isEmpty()) {
+            return;
+        }
+
+        Set<Integer> exerciseOrders = new HashSet<>();
+        for (WorkoutPlanExerciseDTO plannedExercise : plannedExercises) {
+            if (!exerciseOrders.add(plannedExercise.exerciseOrder())) {
+                throw new IllegalArgumentException("A ordem de cada exercício na ficha deve ser única.");
+            }
+
+            Exercise exercise = exerciseRepository.findById(plannedExercise.exerciseId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Exercício não encontrado com o ID: " + plannedExercise.exerciseId()));
+            Set<Integer> setOrders = new HashSet<>();
+            for (WorkoutPlanSetDTO plannedSet : plannedExercise.sets()) {
+                if (!setOrders.add(plannedSet.setOrder())) {
+                    throw new IllegalArgumentException("A ordem de cada série do exercício deve ser única.");
+                }
+
+                plan.addSet(WorkoutPlanSet.builder()
+                        .exercise(exercise)
+                        .exerciseOrder(plannedExercise.exerciseOrder())
+                        .setOrder(plannedSet.setOrder())
+                        .reps(plannedSet.reps())
+                        .weightKg(plannedSet.weightKg())
+                        .build());
+            }
+        }
     }
 }

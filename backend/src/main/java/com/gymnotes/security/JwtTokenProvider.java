@@ -9,6 +9,8 @@ import com.gymnotes.domain.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
@@ -26,6 +28,13 @@ public class JwtTokenProvider {
     private long refreshExpirationMs;
 
     private static final String ISSUER = "gymnotes-api";
+
+    @PostConstruct
+    void validateSecret() {
+        if (jwtSecret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalStateException("JWT_SECRET deve conter pelo menos 32 bytes.");
+        }
+    }
 
     public String generateToken(User user) {
         return buildToken(user, jwtExpirationMs, "access");
@@ -85,4 +94,3 @@ public class JwtTokenProvider {
         return verifier.verify(token);
     }
 }
-

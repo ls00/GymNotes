@@ -44,6 +44,15 @@ public class WorkoutController {
         return ResponseEntity.ok(plans);
     }
 
+    @PutMapping("/plans/{planId}")
+    @Operation(summary = "Editar ficha de treino", description = "Atualiza o nome, a descrição, os exercícios e as séries planejadas de uma ficha do usuário autenticado.")
+    public ResponseEntity<WorkoutPlanDTO> updatePlan(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID planId,
+            @Valid @RequestBody CreateWorkoutPlanDTO request) {
+        return ResponseEntity.ok(workoutService.updatePlan(principal.getId(), planId, request));
+    }
+
     @GetMapping("/exercises/search")
     @Operation(summary = "Buscar exercícios", description = "Retorna o catálogo de exercícios para registrar séries.")
     public ResponseEntity<Page<ExerciseDTO>> searchExercises(

@@ -1,0 +1,15 @@
+unit: ui-social
+bindings:
+  - type: route-declaration
+    name: "App Router page /feed"
+    source_loc: "frontend/src/app/(dashboard)/feed/page.tsx:52"
+    target: "FeedPage"
+    must_appear_in_target: true
+    notes: "Client page renders feed, activity metrics, likes, comments, and share controls."
+  - type: convention
+    name: "TanStack Query hooks"
+    source_loc: "frontend/src/hooks/useFeed.ts:7"
+    target: "Feed loading and interactions"
+    must_appear_in_target: true
+    notes: "Feed is paged by query parameters; interaction success invalidates feed cache."
+runtime_config: []

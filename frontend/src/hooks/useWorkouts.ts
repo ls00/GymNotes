@@ -24,12 +24,12 @@ export function useWorkouts() {
       },
     });
 
-  const useSearchExercises = (query: string) =>
+  const useSearchExercises = () =>
     useQuery<Exercise[]>({
-      queryKey: ["workouts", "exercises", query],
+      queryKey: ["workouts", "exercises"],
       queryFn: async () => {
         const response = await api.get<{ content: Exercise[] }>(
-          `/workouts/exercises/search?q=${encodeURIComponent(query)}`
+          "/workouts/exercises/search?q=&page=0&size=500"
         );
         return response.data.content;
       },
@@ -41,6 +41,17 @@ export function useWorkouts() {
     useMutation({
       mutationFn: async (plan: CreateWorkoutPlan) => {
         const response = await api.post<WorkoutPlan>("/workouts/plans", plan);
+        return response.data;
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["workouts", "plans"] });
+      },
+    });
+
+  const useUpdatePlan = () =>
+    useMutation({
+      mutationFn: async ({ planId, plan }: { planId: string; plan: CreateWorkoutPlan }) => {
+        const response = await api.put<WorkoutPlan>(`/workouts/plans/${planId}`, plan);
         return response.data;
       },
       onSuccess: () => {
@@ -87,6 +98,7 @@ export function useWorkouts() {
     usePlans,
     useSearchExercises,
     useCreatePlan,
+    useUpdatePlan,
     useSessionHistory,
     useCreateSession,
     useExerciseProgress,

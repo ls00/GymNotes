@@ -1,0 +1,212 @@
+modules:
+  - name: ApiClient
+    kind: config
+    source_loc: "frontend/src/services/api.ts:3"
+    used_by_units: [ui-auth, ui-workouts, ui-nutrition, ui-social]
+    fields:
+      - name: baseURL
+        type: "string"
+      - name: timeout
+        type: "number"
+      - name: requestInterceptor
+        type: "Axios request interceptor"
+      - name: responseInterceptor
+        type: "Axios response interceptor"
+    god_class: false
+    split_candidate: false
+    migration_strategy: wrap
+    notes: "Single Axios instance resolves API base URL, reads browser token, and redirects after non-auth 401 responses."
+
+  - name: QueryProvider
+    kind: config
+    source_loc: "frontend/src/components/providers/QueryProvider.tsx:7"
+    used_by_units: [ui-auth, ui-workouts, ui-nutrition, ui-social, ui-dashboard, ui-root]
+    fields:
+      - name: queryClient
+        type: "TanStack QueryClient"
+      - name: retryPolicy
+        type: "queries retry once except HTTP 4xx"
+    god_class: false
+    split_candidate: false
+    migration_strategy: copy
+    notes: "Global app provider; default query stale time is three minutes and refetch on focus is disabled."
+
+  - name: DashboardShell
+    kind: config
+    source_loc: "frontend/src/app/(dashboard)/layout.tsx:7"
+    used_by_units: [ui-workouts, ui-nutrition, ui-social, ui-dashboard]
+    fields:
+      - name: sessionGuard
+        type: "client-side localStorage access-token check"
+      - name: navigation
+        type: "BottomNav and Header"
+    god_class: false
+    split_candidate: false
+    migration_strategy: wrap
+    notes: "Shared route-group layout and navigation for all three dashboard pages."
+
+  - name: User
+    kind: dto
+    source_loc: "backend/src/main/java/com/gymnotes/domain/User.java:11"
+    used_by_units: [api-auth, api-profile, api-workouts, api-nutrition, api-social]
+    fields:
+      - name: id
+        type: "UUID"
+      - name: name
+        type: "String"
+      - name: email
+        type: "String"
+      - name: passwordHash
+        type: "String"
+      - name: role
+        type: "UserRole"
+      - name: profilePictureUrl
+        type: "String"
+      - name: bio
+        type: "String"
+      - name: targetObjective
+        type: "String"
+      - name: dailyCalorieGoal
+        type: "Integer"
+      - name: dailyProteinGoalG
+        type: "BigDecimal"
+      - name: createdAt
+        type: "Instant"
+      - name: updatedAt
+        type: "Instant"
+    god_class: false
+    split_candidate: false
+    migration_strategy: wrap
+    notes: "Shared JPA entity for identity, profile, role, ownership, and nutrition goals."
+
+  - name: UserResponseDTO
+    kind: dto
+    source_loc: "backend/src/main/java/com/gymnotes/dto/UserResponseDTO.java:1"
+    used_by_units: [api-auth, api-profile]
+    fields:
+      - name: id
+        type: "UUID"
+      - name: name
+        type: "String"
+      - name: email
+        type: "String"
+      - name: role
+        type: "UserRole"
+      - name: profilePictureUrl
+        type: "String"
+      - name: bio
+        type: "String"
+      - name: targetObjective
+        type: "String"
+      - name: dailyCalorieGoal
+        type: "Integer"
+      - name: dailyProteinGoalG
+        type: "BigDecimal"
+      - name: createdAt
+        type: "Instant"
+      - name: updatedAt
+        type: "Instant"
+    god_class: false
+    split_candidate: false
+    migration_strategy: copy
+    notes: "Response shape returned by registration, login, and authenticated profile routes."
+
+  - name: WorkoutSession
+    kind: dto
+    source_loc: "backend/src/main/java/com/gymnotes/domain/WorkoutSession.java:11"
+    used_by_units: [api-workouts, api-social]
+    fields:
+      - name: id
+        type: "UUID"
+      - name: user
+        type: "User"
+      - name: workoutPlan
+        type: "WorkoutPlan"
+      - name: title
+        type: "String"
+      - name: notes
+        type: "String"
+      - name: startedAt
+        type: "Instant"
+      - name: endedAt
+        type: "Instant"
+      - name: isPublic
+        type: "Boolean"
+      - name: createdAt
+        type: "Instant"
+      - name: sets
+        type: "List<WorkoutSet>"
+    god_class: false
+    split_candidate: false
+    migration_strategy: wrap
+    notes: "Created by workout logging and read by social-feed assembly and interactions."
+
+  - name: MealLog
+    kind: dto
+    source_loc: "backend/src/main/java/com/gymnotes/domain/MealLog.java:12"
+    used_by_units: [api-nutrition, api-social]
+    fields:
+      - name: id
+        type: "UUID"
+      - name: user
+        type: "User"
+      - name: mealType
+        type: "MealType"
+      - name: loggedAt
+        type: "Instant"
+      - name: photoUrl
+        type: "String"
+      - name: items
+        type: "List<MealItem>"
+    god_class: false
+    split_candidate: false
+    migration_strategy: wrap
+    notes: "Created by nutrition logging and read by social-feed assembly and interactions."
+
+  - name: FrontendApiTypes
+    kind: dto
+    source_loc: "frontend/src/types/index.ts:1"
+    used_by_units: [ui-auth, ui-workouts, ui-nutrition, ui-social]
+    fields:
+      - name: AuthResponse
+        type: "interface {token, refreshToken, tokenType, expiresIn, user}"
+      - name: UserSummary
+        type: "interface UserSummary"
+      - name: WorkoutSessionResponse
+        type: "interface WorkoutSessionResponse"
+      - name: WorkoutSet
+        type: "interface WorkoutSet"
+      - name: MealLogResponse
+        type: "interface MealLogResponse"
+      - name: DailyNutritionSummary
+        type: "interface DailyNutritionSummary"
+      - name: FeedItem
+        type: "interface FeedItem"
+      - name: CommentResponse
+        type: "interface CommentResponse"
+    god_class: false
+    split_candidate: false
+    migration_strategy: copy
+    notes: "Single TypeScript module declares the frontend request/response shapes used by feature hooks."
+
+  - name: ApiErrorHandler
+    kind: config
+    source_loc: "backend/src/main/java/com/gymnotes/exception/GlobalExceptionHandler.java:16"
+    used_by_units: [api-auth, api-profile, api-workouts, api-nutrition, api-social]
+    fields:
+      - name: validationErrors
+        type: "MethodArgumentNotValidException -> 400"
+      - name: notFoundErrors
+        type: "ResourceNotFoundException -> 404"
+      - name: conflictErrors
+        type: "EmailAlreadyExistsException -> 409"
+      - name: authenticationErrors
+        type: "InvalidCredentialsException or BadCredentialsException -> 401"
+      - name: accessErrors
+        type: "AccessDeniedException -> 403"
+      - name: fallbackErrors
+        type: "Exception -> 500"
+    god_class: false
+    split_candidate: false
+    migration_strategy: wrap
+    notes: "Shared controller advice formats API errors as ErrorResponseDTO."

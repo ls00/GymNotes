@@ -1,0 +1,133 @@
+{
+  "planHash": "7da09f5e52346582521fb71e88927a8bd3a54f5dc05e0b8cc48f4eee84078a82",
+  "phase": "standalone",
+  "recordedAtUtc": "2026-11-01T23:48:18.2101191Z",
+  "retryCount": 0,
+  "resetBaseline": false,
+  "complete": true,
+  "result": {
+    "setupSucceeded": true,
+    "setupDurationMs": 110603,
+    "setupFailureOutput": null,
+    "assertions": [
+      {
+        "name": "frontend-lint",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\r\n\u003E gymnotes-frontend@0.1.0 lint\r\n\u003E eslint .\r\n\r\n",
+        "durationMs": 9146
+      },
+      {
+        "name": "frontend-production-build",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\r\n\u003E gymnotes-frontend@0.1.0 build\r\n\u003E next build\r\n\r\n\u25B2 Next.js 16.4.3 (Turbopack)\r\n- Environments: .env.local\r\n\u2713 Running next.config took 37ms\r\n\r\n  Creating an optimized production build ...\r\n\u2713 Compiled successfully in 2.1s\r\n  Running TypeScript ...\r\n  Finished TypeScript in 2.0s ...\r\n  Collecting page data using 8 workers ...\r\n  Generating static pages using 8 workers (0/7) ...\r\n  Generating static pages using 8 workers (1/7) \r\n  Generating static pages using 8 workers (3/7) \r\n  Generating static pages using 8 workers (5/7) \r\n\u2713 Generating static pages using 8 workers (7/7) in 1493ms\r\n  Finalizing page optimization ...\r\n\r\nRoute (app)\r\n\u250C \u25CB /\r\n\u251C \u25CB /_not-found\r\n\u251C \u25CB /feed\r\n\u251C \u25CB /login\r\n\u251C \u25CB /nutrition\r\n\u2514 \u25CB /workouts\r\n\r\n\r\n\u25CB  (Static)  prerendered as static content\r\n\r\n",
+        "durationMs": 10181
+      },
+      {
+        "name": "production-live-smoke",
+        "kind": "process",
+        "verificationMethod": "test-results",
+        "passed": false,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 1,
+        "outputSample": "\r\n\u003E gymnotes-frontend@0.1.0 test:live-smoke\r\n\u003E node --test scripts/live-smoke.test.mjs\r\n\r\n\u2714 site login page is available (114.7693ms)\r\n\u2716 OpenAPI lists the application endpoints (29224.244ms)\r\n\u2714 OpenAPI advertises HTTPS for the deployed API (28407.0637ms)\r\n\u2714 login rejects unknown credentials without creating an account (1057.3495ms)\r\n\u2714 registration validates invalid input before persistence (228.1815ms)\r\n\u2714 frontend origin passes API CORS preflight (188.9646ms)\r\n\u25B6 protected API endpoints reject anonymous requests\r\n  \u2714 GET /users/me (205.5881ms)\r\n  \u2714 PUT /users/me (162.4727ms)\r\n  \u2714 POST /workouts/plans (282.6182ms)\r\n  \u2714 GET /workouts/plans (167.9039ms)\r\n  \u2714 GET /workouts/exercises/search?q=Agachamento (167.4927ms)\r\n  \u2714 POST /workouts/sessions (190.4129ms)\r\n  \u2714 GET /workouts/sessions/history (185.1245ms)\r\n  \u2714 GET /workouts/exercises/10000000-0000-4000-8000-000000000001/progress (168.3036ms)\r\n  \u2714 GET /nutrition/foods/search?q=banana (235.7326ms)\r\n  \u2714 POST /nutrition/foods (167.8725ms)\r\n  \u2714 POST /nutrition/meals (180.4587ms)\r\n  \u2714 GET /nutrition/summary/daily (221.7541ms)\r\n  \u2714 POST /social/friends/request/00000000-0000-4000-8000-000000000001 (181.9221ms)\r\n  \u2714 PUT /social/friends/respond/00000000-0000-4000-8000-000000000001 (181.8572ms)\r\n  \u2714 GET /social/feed (179.6204ms)\r\n  \u2714 POST /social/interactions (168.5861ms)\r\n\u2714 protected API endpoints reject anonymous requests (3050.3898ms)\r\n\u2714 PWA manifest is served as JSON (100.389ms)\r\n\u2714 PWA 192px icon is served as PNG (105.8274ms)\r\n\u2714 PWA 512px icon is served as PNG (66.8372ms)\r\n\u2139 tests 26\r\n\u2139 suites 0\r\n\u2139 pass 25\r\n\u2139 fail 1\r\n\u2139 cancelled 0\r\n\u2139 skipped 0\r\n\u2139 todo 0\r\n\u2139 duration_ms 62630.8798\r\n\r\n\u2716 failing tests:\r\n\r\ntest at scripts\\live-smoke.test.mjs:25:1\r\n\u2716 OpenAPI lists the application endpoints (29224.244ms)\r\n  SyntaxError: Unexpected token \u0027A\u0027, \u0022A server e\u0022... is not valid JSON\r\n      at JSON.parse (\u003Canonymous\u003E)\r\n      at parseJSONFromBytes (node:internal/deps/undici/undici:4387:19)\r\n      at successSteps (node:internal/deps/undici/undici:7041:27)\r\n      at readAllBytes (node:internal/deps/undici/undici:5958:13)\r\n      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\r\n",
+        "durationMs": 63565,
+        "testResults": {
+          "testFramework": "unknown",
+          "runnerDetectedFrom": "none",
+          "testsTotal": 0,
+          "testsPassed": 0,
+          "testsFailed": 0,
+          "testsSkipped": 0,
+          "parseFailed": true
+        }
+      },
+      {
+        "name": "local-login-route",
+        "kind": "http-probe",
+        "verificationMethod": "http-status",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": null,
+        "outputSample": "HTTP 200\n\u003C!DOCTYPE html\u003E\u003Chtml lang=\u0022pt-BR\u0022 class=\u0022dark inter_27b8dd22-module__Bm6sMa__variable teko_3c0504e7-module__TYTnaq__variable\u0022\u003E\u003Chead\u003E\u003Cmeta charSet=\u0022utf-8\u0022/\u003E\u003Cmeta name=\u0022viewport\u0022 content=\u0022width=device-width, initial-scale=1, viewport-fit=cover\u0022/\u003E\u003Clink rel=\u0022stylesheet\u0022 href=\u0022/_next/static/chunks/%5Broot-of-the-server%5D__1j29eho1hs784._.css\u0022 data-precedence=\u0022next_static/chunks/[root-of-the-server]__1j29eho1hs784._.css\u0022/\u003E\u003Clink rel=\u0022preload\u0022 as=\u0022script\u0022 fetchPriority=\u0022low\u0022 href=\u0022/_next/static/chunks/%5Bturbopack%5D_browser_dev_hmr-client_hmr-client_ts_0qva5cupmdgep._.js\u0022/\u003E\u003Cscript src=\u0022/_next/static/chunks/1daa_next_dist_compiled_react-dom_cjs_react-dom-client_development_0mp0cp_t-ezj9.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/1q96_modules_next_dist_compiled_react-dom_cjs_react-dom_development_1sqry0_53krp4.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_next_dist_compiled_react-dom_0grqycjrj6mju._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_164kp-67asdr9._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_next_dist_compiled_next-devtools_index_090k2jmam7qwg.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_next_dist_compiled_1amofcmz--cdp._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_next_dist_client_1wygxxh5rwq0t._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_next_dist_05y3oi5z9mc_3._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_%40swc_helpers_cjs_1r9vbqwj2323d._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/_1anvha4rlo79g._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/turbopack-_06rkbud3pyrlm._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/_0mc45lbv0sa84._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_1ti0p6mx22b_x._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/src_components_providers_QueryProvider_tsx_0zjy5ee1wzze3._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_1iqv3-ijrcq0n._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cscript src=\u0022/_next/static/chunks/src_1833gea6fa8ni._.js\u0022 async=\u0022\u0022\u003E\u003C/script\u003E\u003Cmeta name=\u0022theme-color\u0022 content=\u0022#101010\u0022/\u003E\u003Ctitle\u003EGYMNOTES | Di\u00E1rio de Treinos, Nutri\u00E7\u00E3o e Evolu\u00E7\u00E3o\u003C/title\u003E\u003Cmeta name=\u0022description\u0022 content=\u0022Acompanhe suas cargas, repeti\u00E7\u00F5es, metas nutricionais e compartilhe sua jornada fitness em tempo real com o GymNotes.\u0022/\u003E\u003Cmeta name=\u0022application-name\u0022 content=\u0022GymNotes\u0022/\u003E\u003Clink rel=\u0022manifest\u0022 href=\u0022/manifest.json\u0022/\u003E\u003Cmeta name=\u0022format-detection\u0022 content=\u0022telephone=no\u0022/\u003E\u003Cmeta name=\u0022mobile-web-app-capable\u0022 content=\u0022yes\u0022/\u003E\u003Cmeta name=\u0022apple-mobile-web-app-title\u0022 content=\u0022GymNotes\u0022/\u003E\u003Cmeta name=\u0022apple-mobile-web-app-status-bar-style\u0022 content=\u0022black-translucent\u0022/\u003E\u003Clink rel=\u0022icon\u0022 href=\u0022/favicon.ico\u0022/\u003E\u003Clink rel=\u0022icon\u0022 href=\u0022/icon.svg\u0022 type=\u0022image/svg\u002Bxml\u0022/\u003E\u003Clink rel=\u0022apple-touch-icon\u0022 href=\u0022/icons/icon-192x192.png\u0022 sizes=\u0022192x192\u0022 type=\u0022image/png\u0022/\u003E\u003Cmeta name=\u0022next-size-adjust\u0022 content=\u0022\u0022/\u003E\u003Cscript src=\u0022/_next/static/chunks/node_modules_next_dist_build_polyfills_polyfill-nomodule.js\u0022 noModule=\u0022\u0022\u003E\u003C/script\u003E\u003C/head\u003E\u003Cbody class=\u0022min-h-screen bg-background font-sans text-white antialiased selection:bg-brand selection:text-rich\u0022\u003E\u003Cdiv hidden=\u0022\u0022\u003E\u003C!--$--\u003E\u003C!--/$--\u003E\u003C/div\u003E\u003Cmain class=\u0022relative flex min-h-screen flex-col\u0022\u003E\u003Cdiv class=\u0022relative flex min-h-screen items-center justify-center bg-background px-4 py-12 selection:bg-brand selection:text-rich\u0022\u003E\u003Cdiv class=\u0022relative w-full max-w-md\u0022\u003E\u003Cdiv class=\u0022mb-8 text-center\u0022\u003E\u003Cdiv class=\u0022inline-flex h-12 w-12 items-center justify-center\u0022\u003E\u003Cimg alt=\u0022\u0022 width=\u002248\u0022 height=\u002248\u0022 decoding=\u0022async\u0022 data-nimg=\u00221\u0022 style=\u0022color:transparent\u0022 src=\u0022/icon.svg\u0022/\u003E\u003C/div\u003E\u003Ch1 class=\u0022mt-4 font-display text-4xl font-bold tracking-wide text-white\u0022\u003EGYMNOTES\u003C/h1\u003E\u003Cp class=\u0022mt-1 text-xs text-muted\u0022\u003EEvolu\u00E7\u00E3o de cargas, controle de macros e comunidade\u003C/p\u003E\u003C/div\u003E\u003Cdiv class=\u0022rounded-2xl border border-border bg-surface p-6 shadow-2xl shadow-black/40\u0022\u003E\u003Cdiv class=\u0022mb-6 grid grid-cols-2 gap-1 rounded-xl border border-border \n\u2026[truncated]",
+        "durationMs": 6601
+      }
+    ],
+    "executions": [
+      {
+        "source": "setup[0]",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "ci"
+        ],
+        "cwd": "C:\\Users\\lukas\\Desktop\\studies\\GymNotes\\frontend",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "frontend-lint",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "lint"
+        ],
+        "cwd": "C:\\Users\\lukas\\Desktop\\studies\\GymNotes\\frontend",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "frontend-production-build",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "build"
+        ],
+        "cwd": "C:\\Users\\lukas\\Desktop\\studies\\GymNotes\\frontend",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "production-live-smoke",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "test:live-smoke"
+        ],
+        "cwd": "C:\\Users\\lukas\\Desktop\\studies\\GymNotes\\frontend",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "local-login-route",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "dev"
+        ],
+        "cwd": "C:\\Users\\lukas\\Desktop\\studies\\GymNotes\\frontend",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      }
+    ]
+  }
+}

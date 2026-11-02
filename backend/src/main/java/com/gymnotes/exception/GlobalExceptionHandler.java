@@ -47,9 +47,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
-    @ExceptionHandler(EmailAlreadyExistsException.class)
+    @ExceptionHandler({EmailAlreadyExistsException.class, UsernameAlreadyExistsException.class})
     public ResponseEntity<ErrorResponseDTO> handleEmailAlreadyExistsException(
-            EmailAlreadyExistsException ex, HttpServletRequest request) {
+            RuntimeException ex, HttpServletRequest request) {
         ErrorResponseDTO errorResponse = ErrorResponseDTO.of(
             HttpStatus.CONFLICT.value(),
             "Conflict",
@@ -83,6 +83,30 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDTO> handleIllegalArgumentException(
+            IllegalArgumentException ex, HttpServletRequest request) {
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.of(
+            HttpStatus.BAD_REQUEST.value(),
+            "Bad Request",
+            ex.getMessage(),
+            request.getRequestURI()
+        );
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponseDTO> handleIllegalStateException(
+            IllegalStateException ex, HttpServletRequest request) {
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.of(
+            HttpStatus.CONFLICT.value(),
+            "Conflict",
+            ex.getMessage(),
+            request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDTO> handleGlobalException(
             Exception ex, HttpServletRequest request) {
@@ -95,4 +119,3 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 }
-

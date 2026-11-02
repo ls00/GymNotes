@@ -1,0 +1,9 @@
+unit: ui-workouts
+commit: false
+candidate_splits:
+  - id: "frontend/src/app/(dashboard)/workouts/page.tsx:31-618"
+    drivers: [concern_split]
+    rationale: "The page owns active workout entry, timer, plan creation, catalog search, and history rendering; these workflows have distinct state and user actions."
+    source_slice:
+      file: "frontend/src/app/(dashboard)/workouts/page.tsx"
+      lines: [31, 618]

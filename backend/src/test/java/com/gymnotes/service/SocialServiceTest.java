@@ -4,6 +4,7 @@ import com.gymnotes.domain.MealLog;
 import com.gymnotes.domain.User;
 import com.gymnotes.domain.WorkoutSession;
 import com.gymnotes.domain.enums.InteractionType;
+import com.gymnotes.domain.enums.FeedScope;
 import com.gymnotes.domain.enums.MealType;
 import com.gymnotes.dto.FeedItemDTO;
 import com.gymnotes.repository.FeedInteractionRepository;
@@ -53,25 +54,24 @@ class SocialServiceTest {
     @Test
     void getFeedGloballyPaginatesMergedActivitiesAndCountsSelectedItems() {
         UUID userId = UUID.randomUUID();
-        List<UUID> visibleUserIds = List.of(userId);
+        UUID authorId = UUID.randomUUID();
         List<MealLog> meals = List.of(
-                meal(userId, Instant.parse("2026-10-04T12:00:00Z")),
-                meal(userId, Instant.parse("2026-10-02T12:00:00Z"))
+                meal(authorId, Instant.parse("2026-10-04T12:00:00Z")),
+                meal(authorId, Instant.parse("2026-10-02T12:00:00Z"))
         );
         List<WorkoutSession> workouts = List.of(
-                workout(userId, Instant.parse("2026-10-03T12:00:00Z")),
-                workout(userId, Instant.parse("2026-10-01T12:00:00Z"))
+                workout(authorId, Instant.parse("2026-10-03T12:00:00Z")),
+                workout(authorId, Instant.parse("2026-10-01T12:00:00Z"))
         );
 
-        when(friendshipRepository.findAcceptedFriendIds(userId)).thenReturn(List.of());
-        when(workoutSessionRepository.findPublicSessionsByUserIds(eq(visibleUserIds), any(Pageable.class)))
+        when(workoutSessionRepository.searchGlobalPublicSessions(eq(userId), eq(""), any(Pageable.class)))
                 .thenAnswer(invocation -> {
-                    Pageable sourcePageable = invocation.getArgument(1);
+                    Pageable sourcePageable = invocation.getArgument(2);
                     return workouts.subList(0, Math.min(sourcePageable.getPageSize(), workouts.size()));
                 });
-        when(mealLogRepository.findMealsByUserIds(eq(visibleUserIds), any(Pageable.class)))
+        when(mealLogRepository.searchGlobalPublicMeals(eq(userId), eq(""), any(Pageable.class)))
                 .thenAnswer(invocation -> {
-                    Pageable sourcePageable = invocation.getArgument(1);
+                    Pageable sourcePageable = invocation.getArgument(2);
                     return meals.subList(0, Math.min(sourcePageable.getPageSize(), meals.size()));
                 });
         when(feedInteractionRepository.countByMealLogIdAndType(any(UUID.class), eq(InteractionType.LIKE)))
@@ -91,7 +91,8 @@ class SocialServiceTest {
         when(feedInteractionRepository.findByWorkoutSessionIdAndTypeOrderByCreatedAtAsc(
                 any(UUID.class), eq(InteractionType.COMMENT))).thenReturn(List.of());
 
-        List<FeedItemDTO> feed = socialService.getFeed(userId, PageRequest.of(1, 2));
+        List<FeedItemDTO> feed = socialService.getFeed(
+                userId, FeedScope.GLOBAL, "", PageRequest.of(1, 2));
 
         assertThat(feed)
                 .extracting(FeedItemDTO::id)
@@ -103,8 +104,10 @@ class SocialServiceTest {
         assertThat(feed.get(1))
                 .extracting(FeedItemDTO::likesCount, FeedItemDTO::commentsCount, FeedItemDTO::isLikedByMe)
                 .containsExactly(3L, 2L, true);
-        verify(workoutSessionRepository).findPublicSessionsByUserIds(eq(visibleUserIds), eq(PageRequest.of(0, 4)));
-        verify(mealLogRepository).findMealsByUserIds(eq(visibleUserIds), eq(PageRequest.of(0, 4)));
+        verify(workoutSessionRepository)
+                .searchGlobalPublicSessions(eq(userId), eq(""), eq(PageRequest.of(0, 4)));
+        verify(mealLogRepository)
+                .searchGlobalPublicMeals(eq(userId), eq(""), eq(PageRequest.of(0, 4)));
         verify(feedInteractionRepository)
                 .countByMealLogIdAndType(any(UUID.class), eq(InteractionType.LIKE));
         verify(feedInteractionRepository)

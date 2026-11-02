@@ -52,13 +52,6 @@ gymnotes:
       expiration: 86400000 # 24 hours in ms
       refresh-token:
         expiration: 604800000 # 7 days in ms
-  storage:
-    provider: ${STORAGE_PROVIDER:s3}
-    endpoint: ${STORAGE_ENDPOINT:http://localhost:9000}
-    bucket-name: ${STORAGE_BUCKET:gymnotes-media}
-    access-key: ${STORAGE_ACCESS_KEY:local-minio-access-key}
-    secret-key: ${STORAGE_SECRET_KEY:local-only-minio-secret-key}
-
 # OpenAPI / Swagger configuration
 springdoc:
   api-docs:

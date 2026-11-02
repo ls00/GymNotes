@@ -1,0 +1,15 @@
+unit: api-social
+commit: false
+candidate_splits:
+  - id: "backend/src/main/java/com/gymnotes/service/SocialService.java:45-115"
+    drivers: [concern_split]
+    rationale: "Friendship requests and responses own a separate lifecycle from feed aggregation and post interactions, with distinct persistence and notification branches."
+    source_slice:
+      file: "backend/src/main/java/com/gymnotes/service/SocialService.java"
+      lines: [45, 115]
+  - id: "backend/src/main/java/com/gymnotes/service/SocialService.java:117-294"
+    drivers: [concern_split]
+    rationale: "Timeline composition, per-item interaction counts, likes, and comments form another cohesive concern that currently shares the service with friendship workflows."
+    source_slice:
+      file: "backend/src/main/java/com/gymnotes/service/SocialService.java"
+      lines: [117, 294]

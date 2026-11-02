@@ -30,6 +30,7 @@ public class NutritionService {
     private final FoodRepository foodRepository;
     private final MealLogRepository mealLogRepository;
     private final UserRepository userRepository;
+    private final NutritionGoalService nutritionGoalService;
 
     @Transactional(readOnly = true)
     public Page<FoodDTO> searchFoods(String query, Pageable pageable) {
@@ -63,6 +64,7 @@ public class NutritionService {
                 .mealType(request.mealType())
                 .loggedAt(request.loggedAt() != null ? request.loggedAt() : Instant.now())
                 .photoUrl(request.photoUrl())
+                .isPublic(Boolean.TRUE.equals(request.isPublic()))
                 .build();
 
         for (MealItemRequestDTO itemRequest : request.items()) {
@@ -114,13 +116,18 @@ public class NutritionService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        Integer calorieGoal = user.getDailyCalorieGoal();
+        NutritionGoalResponseDTO calculatedGoal = nutritionGoalService.getCurrentGoal(userId);
+        Integer calorieGoal = calculatedGoal != null
+                ? calculatedGoal.calorieGoal()
+                : user.getDailyCalorieGoal();
         BigDecimal remainingCalories = null;
         if (calorieGoal != null) {
             remainingCalories = BigDecimal.valueOf(calorieGoal).subtract(totalCalories).setScale(2, RoundingMode.HALF_UP);
         }
 
-        BigDecimal proteinGoalG = user.getDailyProteinGoalG();
+        BigDecimal proteinGoalG = calculatedGoal != null
+                ? calculatedGoal.proteinGoalG()
+                : user.getDailyProteinGoalG();
         BigDecimal remainingProteinG = null;
         if (proteinGoalG != null) {
             remainingProteinG = proteinGoalG.subtract(totalProtein).setScale(2, RoundingMode.HALF_UP);
@@ -135,7 +142,9 @@ public class NutritionService {
                 .proteinGoalG(proteinGoalG)
                 .remainingProteinG(remainingProteinG)
                 .totalCarbsG(totalCarbs)
+                .carbsGoalG(calculatedGoal != null ? calculatedGoal.carbsGoalG() : null)
                 .totalFatsG(totalFats)
+                .fatsGoalG(calculatedGoal != null ? calculatedGoal.fatsGoalG() : null)
                 .meals(mealsDto)
                 .build();
     }
@@ -145,4 +154,3 @@ public class NutritionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com ID: " + userId));
     }
 }
-

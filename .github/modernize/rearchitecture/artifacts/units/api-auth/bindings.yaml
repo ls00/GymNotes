@@ -1,0 +1,39 @@
+unit: api-auth
+bindings:
+  - type: route-declaration
+    name: "POST /api/v1/auth/register"
+    source_loc: "backend/src/main/java/com/gymnotes/controller/AuthController.java:26"
+    target: "AuthController.register"
+    must_appear_in_target: true
+    notes: "Public REST route; @Valid JSON request; success status 201."
+  - type: route-declaration
+    name: "POST /api/v1/auth/login"
+    source_loc: "backend/src/main/java/com/gymnotes/controller/AuthController.java:33"
+    target: "AuthController.login"
+    must_appear_in_target: true
+    notes: "Public REST route; @Valid JSON request; success status 200."
+  - type: annotation
+    name: "@RestControllerAdvice"
+    source_loc: "backend/src/main/java/com/gymnotes/exception/GlobalExceptionHandler.java:16"
+    target: "API validation and authentication error responses"
+    must_appear_in_target: true
+    notes: "Maps request validation and invalid credentials into ErrorResponseDTO."
+runtime_config:
+  - key: "gymnotes.security.jwt.secret"
+    source_loc: "backend/src/main/java/com/gymnotes/security/JwtTokenProvider.java:19"
+    source: properties-file
+    default_value: "local-only-not-for-production-gymnotes-jwt-secret"
+    must_appear_in_target: true
+    notes: "HMAC key; production profile expects JWT_SECRET."
+  - key: "gymnotes.security.jwt.expiration"
+    source_loc: "backend/src/main/java/com/gymnotes/security/JwtTokenProvider.java:22"
+    source: properties-file
+    default_value: "86400000 ms"
+    must_appear_in_target: true
+    notes: "Access-token lifetime."
+  - key: "gymnotes.security.jwt.refresh-token.expiration"
+    source_loc: "backend/src/main/java/com/gymnotes/security/JwtTokenProvider.java:25"
+    source: properties-file
+    default_value: "604800000 ms"
+    must_appear_in_target: true
+    notes: "Refresh-token lifetime; no refresh endpoint is declared in the current controller."

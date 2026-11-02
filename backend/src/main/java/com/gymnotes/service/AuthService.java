@@ -1,5 +1,7 @@
 package com.gymnotes.service;
 
+import java.util.Locale;
+
 import com.gymnotes.domain.User;
 import com.gymnotes.dto.AuthResponseDTO;
 import com.gymnotes.dto.LoginRequestDTO;
@@ -7,6 +9,7 @@ import com.gymnotes.dto.RegisterRequestDTO;
 import com.gymnotes.dto.UserResponseDTO;
 import com.gymnotes.exception.EmailAlreadyExistsException;
 import com.gymnotes.exception.InvalidCredentialsException;
+import com.gymnotes.exception.UsernameAlreadyExistsException;
 import com.gymnotes.repository.UserRepository;
 import com.gymnotes.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -24,13 +27,19 @@ public class AuthService {
 
     @Transactional
     public AuthResponseDTO register(RegisterRequestDTO request) {
-        if (userRepository.existsByEmail(request.email())) {
+        String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
+        String normalizedUsername = request.username().trim().toLowerCase(Locale.ROOT);
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             throw new EmailAlreadyExistsException("Já existe um usuário cadastrado com o e-mail: " + request.email());
+        }
+        if (userRepository.existsByUsernameIgnoreCase(normalizedUsername)) {
+            throw new UsernameAlreadyExistsException("Este nome de usuário já está em uso.");
         }
 
         User user = User.builder()
-                .name(request.name().trim())
-                .email(request.email().toLowerCase().trim())
+                .name(request.displayName().trim())
+                .username(normalizedUsername)
+                .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .build();
 
@@ -45,7 +54,8 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthResponseDTO login(LoginRequestDTO request) {
-        User user = userRepository.findByEmail(request.email().toLowerCase().trim())
+        String identifier = request.identifier().trim();
+        User user = userRepository.findByEmailIgnoreCaseOrUsernameIgnoreCase(identifier, identifier)
                 .orElseThrow(() -> new InvalidCredentialsException("E-mail ou senha incorretos."));
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
@@ -59,4 +69,3 @@ public class AuthService {
         return AuthResponseDTO.of(token, refreshToken, tokenProvider.getExpirationMs(), userResponse);
     }
 }
-

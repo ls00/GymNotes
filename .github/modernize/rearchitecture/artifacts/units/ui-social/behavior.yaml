@@ -1,0 +1,38 @@
+unit: ui-social
+side_effects:
+  - source_loc: "frontend/src/app/(dashboard)/feed/page.tsx:76"
+    effect: "Send like/comment interactions and invalidate the feed query after success."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/feed/page.tsx:105"
+    effect: "Share activity using Web Share when available; otherwise copy the activity deep link to clipboard."
+    must_preserve: true
+branches:
+  - source_loc: "frontend/src/app/(dashboard)/feed/page.tsx:90"
+    condition: "Comment text is blank after trimming."
+    behavior: "Do not submit the comment."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/feed/page.tsx:112"
+    condition: "Native share is unavailable."
+    behavior: "Copy the activity URL to clipboard and show feedback."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/feed/page.tsx:121"
+    condition: "User cancels native sharing."
+    behavior: "Dismiss without showing an error."
+    must_preserve: true
+error_paths:
+  - source_loc: "frontend/src/app/(dashboard)/feed/page.tsx:79"
+    trigger: "Feed or interaction request fails."
+    outcome: "Show a page retry action for feed loading or a per-post interaction error."
+    contract: "Visible inline feedback."
+    must_preserve: true
+  - source_loc: "frontend/src/app/(dashboard)/feed/page.tsx:122"
+    trigger: "Share or clipboard operation fails for a reason other than user cancellation."
+    outcome: "Show an inline sharing error."
+    contract: "Visible per-post feedback."
+    must_preserve: true
+concurrency:
+  model: event-loop
+  tx_boundary:
+    source_loc: "frontend/src/hooks/useFeed.ts:21"
+    scope: "No frontend database transaction; interaction requests are asynchronous api-social operations."
+    must_preserve: true

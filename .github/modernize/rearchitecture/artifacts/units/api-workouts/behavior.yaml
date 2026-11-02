@@ -1,0 +1,39 @@
+unit: api-workouts
+side_effects:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/WorkoutService.java:36"
+    effect: "Creates an active workout plan owned by the authenticated user."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/WorkoutService.java:68"
+    effect: "Persists a session and its ordered child sets; the session is later available to history and social feed queries."
+    must_preserve: true
+branches:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/WorkoutService.java:70"
+    condition: "A plan ID is supplied."
+    behavior: "Resolve a plan owned by the authenticated user; missing or foreign plan returns not found."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/WorkoutService.java:77"
+    condition: "startedAt, endedAt, or isPublic is omitted."
+    behavior: "Default start and end to current instant and public visibility to true."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/service/WorkoutService.java:59"
+    condition: "Exercise query is blank."
+    behavior: "Return the paginated exercise catalog; otherwise search names case-insensitively."
+    must_preserve: true
+error_paths:
+  - source_loc: "backend/src/main/java/com/gymnotes/service/WorkoutService.java:72"
+    trigger: "Workout plan or set exercise does not exist / plan belongs to another user."
+    outcome: "Abort the session operation and return HTTP 404."
+    contract: "ErrorResponseDTO."
+    must_preserve: true
+  - source_loc: "backend/src/main/java/com/gymnotes/controller/WorkoutController.java:33"
+    trigger: "Request fails bean validation or lacks valid JWT."
+    outcome: "Return HTTP 400 or HTTP 401, respectively."
+    contract: "Standard validation response or Spring Security unauthorized response."
+    must_preserve: true
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: "backend/src/main/java/com/gymnotes/service/WorkoutService.java:67"
+    scope: "User/plan/exercise lookups and session plus cascading set persistence execute in a single transaction."
+    isolation: "Spring transaction default; no explicit isolation configured."
+    must_preserve: true

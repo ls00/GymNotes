@@ -20,7 +20,8 @@ public record WorkoutSessionResponseDTO(
     Instant endedAt,
     Boolean isPublic,
     Instant createdAt,
-    List<WorkoutSetDTO> sets
+    List<WorkoutSetDTO> sets,
+    String photoUrl
 ) {
     public static WorkoutSessionResponseDTO fromEntity(WorkoutSession session) {
         if (session == null) {
@@ -43,7 +44,7 @@ public record WorkoutSessionResponseDTO(
             .isPublic(session.getIsPublic())
             .createdAt(session.getCreatedAt())
             .sets(setsDto)
+            .photoUrl(session.getPhotoUrl())
             .build();
     }
 }
-

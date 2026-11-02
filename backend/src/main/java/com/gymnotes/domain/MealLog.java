@@ -38,6 +38,10 @@ public class MealLog {
     private String photoUrl;
 
     @Builder.Default
+    @Column(name = "is_public", nullable = false)
+    private Boolean isPublic = false;
+
+    @Builder.Default
     @OneToMany(mappedBy = "mealLog", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MealItem> items = new ArrayList<>();
 
@@ -58,4 +62,3 @@ public class MealLog {
         item.setMealLog(null);
     }
 }
-

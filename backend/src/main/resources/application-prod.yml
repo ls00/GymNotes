@@ -5,10 +5,12 @@ spring:
     url: ${SPRING_DATASOURCE_URL}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+  flyway:
+    baseline-on-migrate: false
 
 gymnotes:
   api:
-    public-url: ${API_PUBLIC_URL:https://gymnotes-api.vercel.app}
+    public-url: ${API_PUBLIC_URL}
   security:
     cors:
       allowed-origins: ${CORS_ALLOWED_ORIGINS}
