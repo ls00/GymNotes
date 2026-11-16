@@ -47,6 +47,9 @@ public class NutritionGoal {
     @Column(name = "activity_level", nullable = false, length = 20)
     private ActivityLevel activityLevel;
 
+    @Column(name = "planned_workout_days_per_week", nullable = false)
+    private Integer plannedWorkoutDaysPerWeek;
+
     @Column(name = "starting_weight_kg", nullable = false, precision = 6, scale = 2)
     private BigDecimal startingWeightKg;
 

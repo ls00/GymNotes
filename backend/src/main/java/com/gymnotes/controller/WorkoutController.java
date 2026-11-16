@@ -70,6 +70,33 @@ public class WorkoutController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PutMapping("/sessions/{sessionId}")
+    @Operation(summary = "Editar publicação de treino", description = "Atualiza o título, as observações e a foto de uma sessão do usuário autenticado.")
+    public ResponseEntity<WorkoutSessionResponseDTO> updateSessionPost(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID sessionId,
+            @Valid @RequestBody UpdateWorkoutPostDTO request) {
+        return ResponseEntity.ok(workoutService.updateSessionPost(principal.getId(), sessionId, request));
+    }
+
+    @PostMapping("/sessions/{sessionId}/archive")
+    @Operation(summary = "Arquivar publicação de treino", description = "Torna privada uma sessão pública sem removê-la do histórico.")
+    public ResponseEntity<Void> archiveSessionPost(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID sessionId) {
+        workoutService.archiveSessionPost(principal.getId(), sessionId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/sessions/{sessionId}")
+    @Operation(summary = "Excluir publicação de treino", description = "Remove permanentemente uma sessão do usuário autenticado.")
+    public ResponseEntity<Void> deleteSession(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID sessionId) {
+        workoutService.deleteSession(principal.getId(), sessionId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/sessions/history")
     @Operation(summary = "Histórico de sessões", description = "Retorna o histórico cronológico de sessões de treino realizadas pelo usuário.")
     public ResponseEntity<List<WorkoutSessionResponseDTO>> getSessionHistory(

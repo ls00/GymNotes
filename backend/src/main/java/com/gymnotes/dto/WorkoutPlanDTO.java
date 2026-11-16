@@ -1,6 +1,7 @@
 package com.gymnotes.dto;
 
 import com.gymnotes.domain.WorkoutPlan;
+import com.gymnotes.domain.enums.MuscleGroup;
 import lombok.Builder;
 
 import java.time.Instant;
@@ -50,8 +51,14 @@ public record WorkoutPlanDTO(
                                     .map(set -> new WorkoutPlanSetDTO(
                                             set.getSetOrder(),
                                             set.getReps(),
-                                            set.getWeightKg()))
-                                    .toList());
+                                            set.getWeightKg(),
+                                            set.getDurationMinutes(),
+                                            set.getDistanceKm()))
+                                    .toList(),
+                            firstSet.getTechnique(),
+                            firstSet.getExercise().getSecondaryMuscleGroups() != null
+                                    ? firstSet.getExercise().getSecondaryMuscleGroups()
+                                    : List.<MuscleGroup>of());
                 })
                 .toList();
 

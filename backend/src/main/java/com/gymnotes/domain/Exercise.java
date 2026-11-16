@@ -5,6 +5,8 @@ import com.gymnotes.domain.enums.MuscleGroup;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -34,5 +36,15 @@ public class Exercise {
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+
+    @ElementCollection
+    @CollectionTable(
+            name = "exercise_secondary_muscle_groups",
+            joinColumns = @JoinColumn(name = "exercise_id")
+    )
+    @Column(name = "muscle_group", nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private List<MuscleGroup> secondaryMuscleGroups = new ArrayList<>();
 }
 

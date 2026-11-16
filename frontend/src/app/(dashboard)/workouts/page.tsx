@@ -10,6 +10,7 @@ import {
   filterExercisesByPortugueseName,
   getExerciseDetails,
   getExerciseName,
+  workoutTechniqueOptions,
 } from "./exerciseLabels";
 import type {
   CreateWorkoutSession,
@@ -18,6 +19,7 @@ import type {
   WorkoutPlanSet,
   WorkoutSet,
   WorkoutSessionResponse,
+  WorkoutTechnique,
 } from "@/types";
 import {
   Activity,
@@ -49,12 +51,15 @@ interface WorkoutSetDraft {
   id: string;
   weightKg: number;
   reps: number;
+  durationMinutes: number;
+  distanceKm: number;
 }
 
 interface ConfirmedExercise {
   id: string;
   exercise: Exercise;
   sets: WorkoutSetDraft[];
+  technique: WorkoutTechnique;
 }
 
 interface WorkoutDraft {
@@ -66,6 +71,7 @@ interface WorkoutDraft {
   plannedExercises: ConfirmedExercise[];
   exercises: ConfirmedExercise[];
   editingExercise: Exercise | null;
+  editingTechnique: WorkoutTechnique;
   editingPresetExerciseId: string | null;
   currentSets: WorkoutSetDraft[];
 }
@@ -74,6 +80,7 @@ type StoredWorkoutDraft = Omit<WorkoutDraft, "focuses"> & {
   focuses: (TrainingFocus | "ARMS" | "SHOULDERS")[];
   plannedExercises?: ConfirmedExercise[];
   editingPresetExerciseId?: string | null;
+  editingTechnique?: WorkoutTechnique;
 };
 
 const focusDetails: Record<TrainingFocus, { label: string; groups: string[] }> = {
@@ -156,6 +163,7 @@ function restoreWorkoutDraft(draft: StoredWorkoutDraft): WorkoutDraft {
     focuses: Array.from(new Set(focuses)),
     plannedExercises: draft.plannedExercises ?? [],
     editingPresetExerciseId: draft.editingPresetExerciseId ?? null,
+    editingTechnique: draft.editingTechnique ?? "NORMAL",
   };
 }
 
@@ -165,41 +173,52 @@ function getDefaultTitle(focuses: TrainingFocus[]) {
   return labels.length ? `Treino de ${labels.join(" + ")}` : "Treino";
 }
 
-function createSet(previousSet?: Pick<WorkoutSetDraft, "weightKg" | "reps"> | WorkoutPlanSet | WorkoutSet): WorkoutSetDraft {
+function createSet(
+  previousSet?:
+    | (
+        Pick<WorkoutSetDraft, "weightKg" | "reps"> &
+          Partial<Pick<WorkoutSetDraft, "durationMinutes" | "distanceKm">>
+      )
+    | WorkoutPlanSet
+    | WorkoutSet,
+  isCardio = false
+): WorkoutSetDraft {
   return {
     id: crypto.randomUUID(),
     weightKg: Number(previousSet?.weightKg ?? 0),
-    reps: Number(previousSet?.reps ?? 8),
+    reps: Number(previousSet?.reps ?? (isCardio ? 0 : 8)),
+    durationMinutes: Number(previousSet?.durationMinutes ?? 20),
+    distanceKm: Number(previousSet?.distanceKm ?? 0),
   };
 }
 
-function getFocusesForMuscleGroup(muscleGroup?: string): TrainingFocus[] {
-  switch (muscleGroup) {
-    case "LEGS":
-    case "QUADRICEPS":
-    case "HAMSTRINGS":
-    case "GLUTES":
-    case "CALVES":
-      return ["LEGS"];
-    case "CHEST":
-      return ["CHEST"];
-    case "BACK":
-      return ["BACK"];
-    case "BICEPS":
-      return ["BICEPS"];
-    case "TRICEPS":
-      return ["TRICEPS"];
-    case "FOREARMS":
-      return ["FOREARMS"];
-    case "SHOULDERS":
-      return ["SHOULDERS_ANTERIOR", "SHOULDERS_LATERAL", "SHOULDERS_POSTERIOR"];
-    case "CORE_ABS":
-      return ["CORE_ABS"];
-    case "CARDIO":
-      return ["CARDIO"];
-    default:
-      return [];
-  }
+function getFocusesForMuscleGroup(
+  muscleGroup?: string,
+  secondaryMuscleGroups: string[] = []
+): TrainingFocus[] {
+  const focusByMuscleGroup: Record<string, TrainingFocus[]> = {
+    LEGS: ["LEGS"],
+    QUADRICEPS: ["LEGS"],
+    HAMSTRINGS: ["LEGS"],
+    GLUTES: ["LEGS"],
+    CALVES: ["LEGS"],
+    CHEST: ["CHEST"],
+    BACK: ["BACK"],
+    BICEPS: ["BICEPS"],
+    TRICEPS: ["TRICEPS"],
+    FOREARMS: ["FOREARMS"],
+    SHOULDERS: ["SHOULDERS_ANTERIOR", "SHOULDERS_LATERAL", "SHOULDERS_POSTERIOR"],
+    CORE_ABS: ["CORE_ABS"],
+    FULL_BODY: ["LEGS", "CHEST", "BACK", "SHOULDERS_LATERAL", "CORE_ABS"],
+    CARDIO: ["CARDIO"],
+  };
+  return Array.from(
+    new Set(
+      [muscleGroup, ...secondaryMuscleGroups].flatMap(
+        (group) => (group && focusByMuscleGroup[group]) || []
+      )
+    )
+  );
 }
 
 function getExerciseSessions(history: WorkoutSessionResponse[], exerciseId: string) {
@@ -588,17 +607,17 @@ export default function WorkoutsPage() {
 
   const matchingExercises = useMemo(() => {
     if (!draft) return [];
-    const muscleGroupMatches = filterExercisesByPortugueseName(
-      exercises,
-      exerciseQuery
-    );
-    if (muscleGroupMatches.length > 0) return muscleGroupMatches;
-
     const allowedGroups = new Set(
       draft.focuses.flatMap((focus) => focusDetails[focus]?.groups ?? [])
     );
     return filterExercisesByPortugueseName(
-      exercises.filter((exercise) => allowedGroups.has(exercise.muscleGroup)),
+      exercises.filter(
+        (exercise) =>
+          allowedGroups.size === 0 ||
+          [exercise.muscleGroup, ...(exercise.secondaryMuscleGroups ?? [])].some(
+            (group) => allowedGroups.has(group)
+          )
+      ),
       exerciseQuery
     );
   }, [draft, exerciseQuery, exercises]);
@@ -615,9 +634,11 @@ export default function WorkoutsPage() {
     ? getExerciseSessions(history, draft.editingExercise.id)
     : [];
   const progressionSuggestion =
+    draft?.editingExercise?.muscleGroup !== "CARDIO" &&
     editingExerciseSessions.length > 0
       ? getProgressionSuggestion(editingExerciseSessions)
       : null;
+  const editingCardio = draft?.editingExercise?.muscleGroup === "CARDIO";
 
   const toggleFocus = (focus: TrainingFocus) => {
     setSelectedFocuses((current) =>
@@ -647,7 +668,7 @@ export default function WorkoutsPage() {
       Array.from(
         new Set(
           (plan.exercises ?? []).flatMap((item) =>
-            getFocusesForMuscleGroup(item.muscleGroup)
+            getFocusesForMuscleGroup(item.muscleGroup, item.secondaryMuscleGroups)
           )
         )
       )
@@ -668,7 +689,7 @@ export default function WorkoutsPage() {
       Array.from(
         new Set(
           (plan.exercises ?? []).flatMap((item) =>
-            getFocusesForMuscleGroup(item.muscleGroup)
+            getFocusesForMuscleGroup(item.muscleGroup, item.secondaryMuscleGroups)
           )
         )
       )
@@ -695,10 +716,12 @@ export default function WorkoutsPage() {
           name: item.exerciseName,
           muscleGroup: item.muscleGroup ?? "",
           equipment: item.equipment,
+          secondaryMuscleGroups: item.secondaryMuscleGroups,
         },
+        technique: item.technique ?? "NORMAL",
         sets: [...item.sets]
           .sort((a, b) => a.setOrder - b.setOrder)
-          .map((set) => createSet(set)),
+          .map((set) => createSet(set, item.muscleGroup === "CARDIO")),
       }));
     setErrorMessage("");
     setFinishedMessage(false);
@@ -711,6 +734,7 @@ export default function WorkoutsPage() {
       plannedExercises,
       exercises: [],
       editingExercise: null,
+      editingTechnique: "NORMAL",
       editingPresetExerciseId: null,
       currentSets: [],
     });
@@ -727,15 +751,20 @@ export default function WorkoutsPage() {
       (item) => item.id === presetExerciseId
     );
     const startingSets = previousSessions[0]?.sets.length
-      ? previousSessions[0].sets.map((set) => createSet(set))
+      ? previousSessions[0].sets.map((set) =>
+          createSet(set, exercise.muscleGroup === "CARDIO")
+        )
       : presetExercise?.sets.length
-        ? presetExercise.sets.map((set) => createSet(set))
-        : [createSet()];
+        ? presetExercise.sets.map((set) =>
+            createSet(set, exercise.muscleGroup === "CARDIO")
+          )
+        : [createSet(undefined, exercise.muscleGroup === "CARDIO")];
     setDraft((current) =>
       current
         ? {
             ...current,
             editingExercise: exercise,
+            editingTechnique: presetExercise?.technique ?? "NORMAL",
             editingPresetExerciseId: presetExerciseId ?? null,
             currentSets: startingSets,
           }
@@ -780,13 +809,18 @@ export default function WorkoutsPage() {
       setErrorMessage("Adicione ao menos uma série antes de confirmar o exercício.");
       return;
     }
+    const isCardio = draft.editingExercise.muscleGroup === "CARDIO";
     if (
       draft.currentSets.some(
         (set) =>
           !Number.isFinite(set.weightKg) ||
           set.weightKg < 0 ||
-          !Number.isInteger(set.reps) ||
-          set.reps <= 0
+          (isCardio
+            ? !Number.isInteger(set.durationMinutes) ||
+              set.durationMinutes <= 0 ||
+              !Number.isFinite(set.distanceKm) ||
+              set.distanceKm < 0
+            : !Number.isInteger(set.reps) || set.reps <= 0)
       )
     ) {
       setErrorMessage("Informe uma carga válida e ao menos uma repetição em todas as séries.");
@@ -803,12 +837,14 @@ export default function WorkoutsPage() {
                 id: crypto.randomUUID(),
                 exercise: current.editingExercise,
                 sets: current.currentSets,
+                technique: current.editingTechnique,
               },
             ],
             plannedExercises: current.plannedExercises.filter(
               (item) => item.id !== current.editingPresetExerciseId
             ),
             editingExercise: null,
+            editingTechnique: "NORMAL",
             editingPresetExerciseId: null,
             currentSets: [],
           }
@@ -880,13 +916,18 @@ export default function WorkoutsPage() {
       endedAt: new Date().toISOString(),
       isPublic: draft.isPublic,
       photoUrl: workoutPhoto ?? undefined,
-      sets: draft.exercises.flatMap(({ exercise, sets }) =>
+      sets: draft.exercises.flatMap(({ exercise, sets, technique }) =>
         sets.map((set, index) => ({
           exerciseId: exercise.id,
           setOrder: index + 1,
-          reps: set.reps,
-          weightKg: set.weightKg,
+          reps: exercise.muscleGroup === "CARDIO" ? 0 : set.reps,
+          weightKg: exercise.muscleGroup === "CARDIO" ? 0 : set.weightKg,
           isWarmup: false,
+          technique,
+          durationMinutes:
+            exercise.muscleGroup === "CARDIO" ? set.durationMinutes : undefined,
+          distanceKm:
+            exercise.muscleGroup === "CARDIO" ? set.distanceKm : undefined,
         }))
       ),
     };
@@ -1399,6 +1440,7 @@ export default function WorkoutsPage() {
                         ? {
                             ...current,
                             editingExercise: null,
+                            editingTechnique: "NORMAL",
                             editingPresetExerciseId: null,
                             currentSets: [],
                           }
@@ -1423,7 +1465,11 @@ export default function WorkoutsPage() {
                   </p>
                   <p className="mt-2 text-[11px] text-white">
                     {editingExerciseSessions[0].sets
-                      .map((set) => `${set.weightKg} kg × ${set.reps} reps`)
+                      .map((set) =>
+                        draft.editingExercise?.muscleGroup === "CARDIO"
+                          ? `${set.durationMinutes ?? 0} min · ${Number(set.distanceKm ?? 0).toLocaleString("pt-BR")} km`
+                          : `${set.weightKg} kg × ${set.reps} reps`
+                      )
                       .join(" · ")}
                   </p>
                   {progressionSuggestion && (
@@ -1466,40 +1512,101 @@ export default function WorkoutsPage() {
                 </p>
               )}
 
+              <label className="mt-4 block text-xs font-semibold text-muted">
+                Técnica de execução
+                <select
+                  value={draft.editingTechnique}
+                  onChange={(event) =>
+                    setDraft((current) =>
+                      current
+                        ? {
+                            ...current,
+                            editingTechnique: event.target.value as WorkoutTechnique,
+                          }
+                        : current
+                    )
+                  }
+                  className="mt-1.5 min-h-11 w-full rounded-xl border border-border bg-white/[0.03] px-3 text-sm text-white outline-none focus:border-brand"
+                >
+                  {workoutTechniqueOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
               <div className="mt-4 space-y-2">
                 <div className="grid grid-cols-[2rem_1fr_1fr_2.5rem] gap-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[3rem_1fr_1fr_3rem]">
                   <span>Série</span>
-                  <label htmlFor="first-set-weight">Carga (kg)</label>
-                  <label htmlFor="first-set-reps">Repetições</label>
+                  <label htmlFor="first-set-weight">
+                    {editingCardio ? "Duração (min)" : "Carga (kg)"}
+                  </label>
+                  <label htmlFor="first-set-reps">
+                    {editingCardio ? "Distância (km)" : "Repetições"}
+                  </label>
                   <span className="sr-only">Ações</span>
                 </div>
                 {draft.currentSets.map((set, index) => (
                   <div key={set.id} className="grid grid-cols-[2rem_1fr_1fr_2.5rem] items-center gap-2 rounded-xl border border-border bg-white/[0.02] p-2 sm:grid-cols-[3rem_1fr_1fr_3rem] sm:p-3">
                     <span className="text-center font-mono text-xs font-bold text-muted">{index + 1}</span>
-                    <SetValueInput
-                      id={index === 0 ? "first-set-weight" : undefined}
-                      label={`Carga da série ${index + 1} em kg`}
-                      value={set.weightKg}
-                      min={0}
-                      step={0.5}
-                      inputMode="decimal"
-                      increments={[-10, -5, 5, 10]}
-                      onChange={(weightKg) =>
-                        updateCurrentSet(set.id, { weightKg })
-                      }
-                      size="comfortable"
-                    />
-                    <SetValueInput
-                      id={index === 0 ? "first-set-reps" : undefined}
-                      label={`Repetições da série ${index + 1}`}
-                      value={set.reps}
-                      min={1}
-                      step={1}
-                      inputMode="numeric"
-                      increments={[-1, 1]}
-                      onChange={(reps) => updateCurrentSet(set.id, { reps })}
-                      size="comfortable"
-                    />
+                    {editingCardio ? (
+                      <>
+                        <SetValueInput
+                          id={index === 0 ? "first-set-weight" : undefined}
+                          label={`Duração da série ${index + 1} em minutos`}
+                          value={set.durationMinutes}
+                          min={1}
+                          step={1}
+                          inputMode="numeric"
+                          increments={[-5, 5]}
+                          onChange={(durationMinutes) =>
+                            updateCurrentSet(set.id, { durationMinutes })
+                          }
+                          size="comfortable"
+                        />
+                        <SetValueInput
+                          id={index === 0 ? "first-set-reps" : undefined}
+                          label={`Distância da série ${index + 1} em quilômetros`}
+                          value={set.distanceKm}
+                          min={0}
+                          step={0.1}
+                          inputMode="decimal"
+                          increments={[-1, 1]}
+                          onChange={(distanceKm) =>
+                            updateCurrentSet(set.id, { distanceKm })
+                          }
+                          size="comfortable"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <SetValueInput
+                          id={index === 0 ? "first-set-weight" : undefined}
+                          label={`Carga da série ${index + 1} em kg`}
+                          value={set.weightKg}
+                          min={0}
+                          step={0.5}
+                          inputMode="decimal"
+                          increments={[-10, -5, 5, 10]}
+                          onChange={(weightKg) =>
+                            updateCurrentSet(set.id, { weightKg })
+                          }
+                          size="comfortable"
+                        />
+                        <SetValueInput
+                          id={index === 0 ? "first-set-reps" : undefined}
+                          label={`Repetições da série ${index + 1}`}
+                          value={set.reps}
+                          min={1}
+                          step={1}
+                          inputMode="numeric"
+                          increments={[-1, 1]}
+                          onChange={(reps) => updateCurrentSet(set.id, { reps })}
+                          size="comfortable"
+                        />
+                      </>
+                    )}
                     <button
                       type="button"
                       onClick={() => removeCurrentSet(set.id)}
@@ -1525,7 +1632,17 @@ export default function WorkoutsPage() {
                 onClick={confirmExercise}
                 disabled={
                   draft.currentSets.length === 0 ||
-                  draft.currentSets.some((set) => !Number.isInteger(set.reps) || set.reps <= 0 || !Number.isFinite(set.weightKg) || set.weightKg < 0)
+                  draft.currentSets.some((set) =>
+                    editingCardio
+                      ? !Number.isInteger(set.durationMinutes) ||
+                        set.durationMinutes <= 0 ||
+                        !Number.isFinite(set.distanceKm) ||
+                        set.distanceKm < 0
+                      : !Number.isInteger(set.reps) ||
+                        set.reps <= 0 ||
+                        !Number.isFinite(set.weightKg) ||
+                        set.weightKg < 0
+                  )
                 }
                 className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 text-sm font-bold text-rich transition hover:bg-brand-muted disabled:cursor-not-allowed disabled:opacity-50"
               >

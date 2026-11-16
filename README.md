@@ -53,8 +53,9 @@ dados e tenha as informações importantes à mão — no computador ou no celul
 
 ### Treinos com os detalhes que contam
 
-- Registre exercícios, séries, repetições, carga e esforço.
-- Salve fichas de treino com exercícios e séries planejadas.
+- Registre exercícios, técnicas de série, carga e repetições; para cardio, duração e distância.
+- Pesquise exercícios de máquinas e compostos por seus grupos musculares.
+- Salve fichas com séries normais, drop set, bi-set, super set, tri-set, rest-pause e série gigante.
 - Consulte o histórico, retome cargas anteriores e acompanhe a evolução.
 - Ao finalizar, confira o resumo da sessão e escolha se quer publicá-la no feed.
 
@@ -62,7 +63,13 @@ dados e tenha as informações importantes à mão — no computador ou no celul
 
 - Registre refeições e consulte calorias e macronutrientes do dia.
 - Pesquise alimentos no catálogo e confira os dados nutricionais disponíveis.
-- Defina um objetivo, acompanhe metas estimadas e registre seu peso ao longo do tempo.
+
+### Objetivo com acompanhamento de progresso
+
+- Defina se quer emagrecer, crescer ou recompor o corpo, com peso-alvo e prazo quando aplicável.
+- Informe quantos dias por semana planeja treinar e acompanhe as sessões realizadas.
+- Consulte o histórico de peso, o consumo registrado e uma projeção estimada de ritmo e prazo.
+- Na recomposição, acompanhe o ciclo e a consistência sem tratar a balança como única medida de progresso.
 
 ### Uma experiência feita para acompanhar sua rotina
 

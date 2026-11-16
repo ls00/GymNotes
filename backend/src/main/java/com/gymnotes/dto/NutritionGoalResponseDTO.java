@@ -16,6 +16,7 @@ public record NutritionGoalResponseDTO(
     Integer age,
     BigDecimal heightCm,
     ActivityLevel activityLevel,
+    Integer plannedWorkoutDaysPerWeek,
     BigDecimal startingWeightKg,
     BigDecimal currentWeightKg,
     BigDecimal targetWeightKg,
@@ -43,6 +44,7 @@ public record NutritionGoalResponseDTO(
                 .age(goal.getAge())
                 .heightCm(goal.getHeightCm())
                 .activityLevel(goal.getActivityLevel())
+                .plannedWorkoutDaysPerWeek(goal.getPlannedWorkoutDaysPerWeek())
                 .startingWeightKg(goal.getStartingWeightKg())
                 .currentWeightKg(currentWeightKg)
                 .targetWeightKg(goal.getTargetWeightKg())

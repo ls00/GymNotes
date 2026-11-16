@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useNutrition } from "@/hooks/useNutrition";
 import { Plus, Utensils, Flame, Check } from "lucide-react";
 import type { Food, LogMealRequest } from "@/types";
-import NutritionGoalDashboard from "./NutritionGoalDashboard";
 
 const mealTypeLabels: Record<LogMealRequest["mealType"], string> = {
   BREAKFAST: "Café da manhã",
@@ -136,8 +135,6 @@ export default function NutritionPage() {
           {mealError}
         </div>
       )}
-
-      <NutritionGoalDashboard />
 
       {/* Calories Overview Card */}
       <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">

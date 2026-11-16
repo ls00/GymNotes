@@ -64,14 +64,14 @@ class SocialServiceTest {
                 workout(authorId, Instant.parse("2026-10-01T12:00:00Z"))
         );
 
-        when(workoutSessionRepository.searchGlobalPublicSessions(eq(userId), eq(""), any(Pageable.class)))
+        when(workoutSessionRepository.searchGlobalPublicSessions(eq(""), any(Pageable.class)))
                 .thenAnswer(invocation -> {
-                    Pageable sourcePageable = invocation.getArgument(2);
+                    Pageable sourcePageable = invocation.getArgument(1);
                     return workouts.subList(0, Math.min(sourcePageable.getPageSize(), workouts.size()));
                 });
-        when(mealLogRepository.searchGlobalPublicMeals(eq(userId), eq(""), any(Pageable.class)))
+        when(mealLogRepository.searchGlobalPublicMeals(eq(""), any(Pageable.class)))
                 .thenAnswer(invocation -> {
-                    Pageable sourcePageable = invocation.getArgument(2);
+                    Pageable sourcePageable = invocation.getArgument(1);
                     return meals.subList(0, Math.min(sourcePageable.getPageSize(), meals.size()));
                 });
         when(feedInteractionRepository.countByMealLogIdAndType(any(UUID.class), eq(InteractionType.LIKE)))
@@ -105,13 +105,37 @@ class SocialServiceTest {
                 .extracting(FeedItemDTO::likesCount, FeedItemDTO::commentsCount, FeedItemDTO::isLikedByMe)
                 .containsExactly(3L, 2L, true);
         verify(workoutSessionRepository)
-                .searchGlobalPublicSessions(eq(userId), eq(""), eq(PageRequest.of(0, 4)));
+                .searchGlobalPublicSessions(eq(""), eq(PageRequest.of(0, 4)));
         verify(mealLogRepository)
-                .searchGlobalPublicMeals(eq(userId), eq(""), eq(PageRequest.of(0, 4)));
+                .searchGlobalPublicMeals(eq(""), eq(PageRequest.of(0, 4)));
         verify(feedInteractionRepository)
                 .countByMealLogIdAndType(any(UUID.class), eq(InteractionType.LIKE));
         verify(feedInteractionRepository)
                 .countByWorkoutSessionIdAndType(any(UUID.class), eq(InteractionType.LIKE));
+    }
+
+    @Test
+    void friendsFeedIncludesTheAuthenticatedUsersOwnPublicActivities() {
+        UUID userId = UUID.randomUUID();
+        MealLog ownMeal = meal(userId, Instant.parse("2026-10-04T12:00:00Z"));
+        when(friendshipRepository.findAcceptedFriendIds(userId)).thenReturn(List.of());
+        when(workoutSessionRepository.searchFriendsPublicSessions(
+                eq(List.of(userId)), eq(""), any(Pageable.class))).thenReturn(List.of());
+        when(mealLogRepository.searchFriendsPublicMeals(
+                eq(List.of(userId)), eq(""), any(Pageable.class))).thenReturn(List.of(ownMeal));
+        when(feedInteractionRepository.countByMealLogIdAndType(any(UUID.class), any(InteractionType.class)))
+                .thenReturn(0L);
+        when(feedInteractionRepository.existsByUserIdAndMealLogIdAndType(
+                any(UUID.class), any(UUID.class), any(InteractionType.class))).thenReturn(false);
+        when(feedInteractionRepository.findByMealLogIdAndTypeOrderByCreatedAtAsc(
+                any(UUID.class), eq(InteractionType.COMMENT))).thenReturn(List.of());
+
+        List<FeedItemDTO> feed = socialService.getFeed(
+                userId, FeedScope.FRIENDS, "", PageRequest.of(0, 20));
+
+        assertThat(feed).extracting(FeedItemDTO::id).containsExactly(ownMeal.getId());
+        verify(mealLogRepository)
+                .searchFriendsPublicMeals(eq(List.of(userId)), eq(""), eq(PageRequest.of(0, 20)));
     }
 
     private static MealLog meal(UUID userId, Instant loggedAt) {

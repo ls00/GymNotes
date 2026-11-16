@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { Activity, CalendarDays, Scale, Sparkles } from "lucide-react";
+import { Activity, CalendarDays, Scale, Sparkles, Target } from "lucide-react";
 import { useNutrition } from "@/hooks/useNutrition";
 import type {
   BiologicalSex,
@@ -53,7 +53,21 @@ function getGoalProgress(goal: NutritionGoal) {
   return Math.max(0, Math.min(100, Math.round(progress * 100)));
 }
 
-export default function NutritionGoalDashboard() {
+function formatShortDate(date: Date) {
+  return date.toLocaleDateString("pt-BR", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function formatKg(value: number) {
+  return `${Math.abs(value).toLocaleString("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })} kg`;
+}
+
+export default function ObjectiveDashboard() {
   const {
     useNutritionProgress,
     useSaveNutritionGoal,
@@ -75,6 +89,7 @@ export default function NutritionGoalDashboard() {
   const [age, setAge] = useState("");
   const [heightCm, setHeightCm] = useState("");
   const [activityLevel, setActivityLevel] = useState<NutritionActivityLevel | "">("");
+  const [plannedWorkoutDaysPerWeek, setPlannedWorkoutDaysPerWeek] = useState("3");
   const [currentWeightKg, setCurrentWeightKg] = useState("");
   const [targetWeightKg, setTargetWeightKg] = useState("");
   const [targetDate, setTargetDate] = useState(getDefaultTargetDate);
@@ -109,6 +124,9 @@ export default function NutritionGoalDashboard() {
     setAge(existing?.age?.toString() ?? "");
     setHeightCm(existing?.heightCm?.toString() ?? "");
     setActivityLevel(existing?.activityLevel ?? "");
+    setPlannedWorkoutDaysPerWeek(
+      existing?.plannedWorkoutDaysPerWeek?.toString() ?? "3"
+    );
     setCurrentWeightKg(
       existing?.currentWeightKg?.toString() ?? ""
     );
@@ -132,6 +150,7 @@ export default function NutritionGoalDashboard() {
       age: Number(age),
       heightCm: Number(heightCm),
       activityLevel,
+      plannedWorkoutDaysPerWeek: Number(plannedWorkoutDaysPerWeek),
       currentWeightKg: Number(currentWeightKg),
       targetDate,
       ...(objective !== "BODY_RECOMPOSITION" && targetWeightKg
@@ -191,7 +210,174 @@ export default function NutritionGoalDashboard() {
 
   const goalProgress = goal ? getGoalProgress(goal) : null;
   const maxCalories = Math.max(goal?.calorieGoal ?? 0, ...dailyIntake.map((day) => day.calories), 1);
-
+  const maintenanceCalories = progress?.maintenanceCalories ?? null;
+  const averageRecordedCalories = progress?.averageRecordedCalories ?? null;
+  const calorieBalance =
+    averageRecordedCalories !== null && maintenanceCalories !== null
+      ? averageRecordedCalories - maintenanceCalories
+      : null;
+  const weeklyWeightChange =
+    calorieBalance === null ? null : (calorieBalance * 7) / 7_700;
+  const workoutsLast7Days = progress?.workoutsLast7Days ?? 0;
+  const plannedWorkoutDays = goal?.plannedWorkoutDaysPerWeek ?? 0;
+  const workoutAdherence = plannedWorkoutDays
+    ? Math.min(100, Math.round((workoutsLast7Days / plannedWorkoutDays) * 100))
+    : 0;
+  const intakeDays = progress?.recordedIntakeDays ?? 0;
+  const hasEnoughIntakeData = intakeDays >= 7;
+  const currentWeight = goal?.currentWeightKg ?? 0;
+  const targetWeight = goal?.targetWeightKg ?? null;
+  const isWeightObjective = goal?.objective !== "BODY_RECOMPOSITION";
+  const goalReached =
+    isWeightObjective &&
+    targetWeight !== null &&
+    (goal?.objective === "WEIGHT_LOSS"
+      ? currentWeight <= targetWeight
+      : currentWeight >= targetWeight);
+  const remainingWeight =
+    targetWeight === null ? null : targetWeight - currentWeight;
+  const isRecomposition = goal?.objective === "BODY_RECOMPOSITION";
+  const cycleStart = new Date(`${goal?.startDate ?? "1970-01-01"}T12:00:00`);
+  const cycleEnd = new Date(`${goal?.targetDate ?? "1970-01-01"}T12:00:00`);
+  const cycleDurationDays = Math.max(
+    1,
+    Math.ceil((cycleEnd.getTime() - cycleStart.getTime()) / (24 * 60 * 60 * 1000))
+  );
+  const cycleElapsedDays = Math.max(
+    0,
+    Math.min(cycleDurationDays, cycleDurationDays - (goal?.daysRemaining ?? cycleDurationDays))
+  );
+  const cycleWeeks = Math.max(1, Math.ceil(cycleDurationDays / 7));
+  const cycleCurrentWeek = Math.min(
+    cycleWeeks,
+    Math.floor(cycleElapsedDays / 7) + 1
+  );
+  const cycleProgress = Math.round((cycleCurrentWeek / cycleWeeks) * 100);
+  const progressValue = isRecomposition ? cycleProgress : goalProgress ?? 0;
+  const objectiveWeightChange =
+    targetWeight === null || !goal
+      ? 0
+      : Math.min(
+          Math.abs(targetWeight - goal.startingWeightKg),
+          Math.max(
+            0,
+            goal.objective === "WEIGHT_LOSS"
+              ? goal.startingWeightKg - currentWeight
+              : currentWeight - goal.startingWeightKg
+          )
+        );
+  const achievedLabel = isRecomposition
+    ? `Semana ${cycleCurrentWeek} de ${cycleWeeks}`
+    : remainingWeight === null
+      ? ""
+      : formatKg(objectiveWeightChange);
+  const remainingLabel = isRecomposition
+    ? cycleElapsedDays >= cycleDurationDays
+      ? "Ciclo concluído"
+      : `Faltam ${cycleWeeks - cycleCurrentWeek} semanas`
+    : goalReached
+      ? "Meta atingida!"
+      : remainingWeight === null
+        ? ""
+        : `Faltam ${formatKg(remainingWeight)}`;
+  const startLabel = isRecomposition
+    ? `Início: semana 1`
+    : `Início: ${formatWeight(goal?.startingWeightKg ?? 0)}`;
+  const endLabel = isRecomposition
+    ? `Meta: semana ${cycleWeeks}`
+    : `Meta: ${formatWeight(targetWeight ?? 0)}`;
+  const rateInGrams = weeklyWeightChange === null
+    ? null
+    : Math.round(weeklyWeightChange * 1000);
+  const expectedRate =
+    hasEnoughIntakeData &&
+    (goal?.objective === "WEIGHT_LOSS"
+      ? rateInGrams !== null && rateInGrams <= -50
+      : goal?.objective === "MUSCLE_GAIN"
+        ? rateInGrams !== null && rateInGrams >= 50
+        : false);
+  const forecastWeeks =
+    isRecomposition
+      ? cycleWeeks - cycleCurrentWeek
+      : goal &&
+          targetWeight !== null &&
+          expectedRate &&
+          remainingWeight !== null &&
+          !goalReached
+        ? Math.ceil(Math.abs(remainingWeight / (weeklyWeightChange ?? 0)))
+        : null;
+  const forecastDate =
+    forecastWeeks !== null && goal && goal.daysRemaining > 0
+      ? (() => {
+          const date = new Date(`${goal.targetDate}T12:00:00`);
+          date.setDate(date.getDate() + forecastWeeks * 7 - goal.daysRemaining);
+          return date;
+        })()
+      : null;
+  const paceLabel = isRecomposition
+    ? !hasEnoughIntakeData
+      ? "Dados insuficientes"
+      : Math.abs(calorieBalance ?? Infinity) > 150
+        ? "Ajuste calórico"
+        : workoutsLast7Days < plannedWorkoutDays
+          ? "Treino abaixo da meta"
+          : "Hábitos alinhados"
+    : goalReached
+      ? "Meta atingida"
+      : !hasEnoughIntakeData
+        ? "Aguardando registros"
+        : !expectedRate
+          ? "Sem ritmo previsto"
+          : goal?.objective === "WEIGHT_LOSS"
+            ? calorieBalance !== null && calorieBalance <= -800
+              ? "Déficit agressivo"
+              : workoutsLast7Days < plannedWorkoutDays
+                ? "Atenção aos treinos"
+                : calorieBalance !== null && calorieBalance <= -300
+                  ? "Ritmo adequado"
+                  : "Déficit leve"
+            : calorieBalance !== null && calorieBalance > 400
+              ? "Superávit alto"
+              : workoutsLast7Days < plannedWorkoutDays
+                ? "Atenção aos treinos"
+                : calorieBalance !== null && calorieBalance >= 200
+                  ? "Ritmo ideal"
+                  : "Abaixo do ritmo";
+  const diagnostic = isRecomposition
+    ? !hasEnoughIntakeData
+      ? `Há ${intakeDays} dias com refeições registradas. Registre pelo menos 7 dos últimos 14 dias para avaliar a média calórica.`
+      : Math.abs(calorieBalance ?? Infinity) > 150
+        ? `Sua média está fora da faixa estimada de manutenção (±150 kcal). A referência calculada é ${maintenanceCalories?.toLocaleString("pt-BR") ?? "—"} kcal/dia.`
+        : workoutsLast7Days < plannedWorkoutDays
+          ? `Você fez ${workoutsLast7Days} de ${plannedWorkoutDays} treinos planejados nos últimos 7 dias.`
+          : "Sua ingestão está próxima à manutenção e a frequência de treinos planejada foi cumprida. Acompanhe também medidas e desempenho."
+    : goalReached
+      ? "Você alcançou o peso definido. Revise seu objetivo e a estratégia alimentar para a próxima etapa."
+      : !hasEnoughIntakeData
+        ? `Há ${intakeDays} dias com refeições registradas. Registre pelo menos 7 dos últimos 14 dias para estimar seu ritmo.`
+        : !expectedRate
+          ? goal?.objective === "WEIGHT_LOSS"
+            ? calorieBalance !== null && calorieBalance >= 0
+              ? "Os registros não indicam déficit calórico para estimar a chegada ao peso desejado."
+              : "O déficit é pequeno demais para uma projeção útil. Continue registrando para acompanhar a tendência."
+            : calorieBalance !== null && calorieBalance <= 0
+              ? "Os registros não indicam superávit calórico para estimar a chegada ao peso desejado."
+              : "O superávit é pequeno demais para uma projeção útil. Compare sua média com a meta alimentar estimada."
+          : goal?.objective === "WEIGHT_LOSS"
+            ? calorieBalance !== null && calorieBalance <= -800
+              ? "O déficit estimado está alto. Revise a estratégia com um profissional de saúde, especialmente se notar efeitos adversos."
+              : workoutsLast7Days < plannedWorkoutDays
+                ? `Você fez ${workoutsLast7Days} de ${plannedWorkoutDays} treinos planejados. O treino é um indicador de consistência, não uma garantia de preservação muscular.`
+                : calorieBalance !== null && calorieBalance <= -300
+                  ? "O déficit está na faixa de referência do protótipo. Continue registrando peso e alimentação para comparar a tendência real com esta estimativa."
+                  : `O déficit atual é menor que 300 kcal/dia. Compare sua média com a meta estimada de ${goal?.calorieGoal.toLocaleString("pt-BR")} kcal/dia para avaliar um ajuste.`
+            : calorieBalance !== null && calorieBalance > 400
+              ? `O superávit está acima da faixa moderada de 200–400 kcal/dia. Compare sua média com a meta estimada de ${goal?.calorieGoal.toLocaleString("pt-BR")} kcal/dia.`
+              : workoutsLast7Days < plannedWorkoutDays
+                ? `O superávit está em ${Math.round(calorieBalance ?? 0)} kcal/dia, mas você fez ${workoutsLast7Days} de ${plannedWorkoutDays} treinos planejados. A frequência não garante a composição do peso ganho.`
+                : calorieBalance !== null && calorieBalance < 200
+                  ? `O superávit está abaixo da faixa moderada de 200–400 kcal/dia. Compare sua média com a meta estimada de ${goal?.calorieGoal.toLocaleString("pt-BR")} kcal/dia.`
+                  : `Superávit moderado e frequência de treinos cumprida. O ritmo é uma estimativa de peso, não uma previsão de ganho exclusivamente muscular.`;
   return (
     <section className="mb-8 rounded-2xl border border-border bg-surface p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -201,7 +387,7 @@ export default function NutritionGoalDashboard() {
             Acompanhamento
           </span>
           <h2 className="mt-2 text-xl font-bold text-white sm:text-2xl">
-            Seu objetivo nutricional
+            Seu objetivo
           </h2>
           <p className="mt-1 max-w-prose text-xs leading-relaxed text-muted">
             Metas estimadas a partir dos seus dados e do prazo escolhido. Acompanhe tendências, não variações isoladas.
@@ -308,6 +494,21 @@ export default function NutritionGoalDashboard() {
               </select>
             </label>
             <label className="text-xs font-medium text-muted">
+              Treinos planejados por semana
+              <select
+                value={plannedWorkoutDaysPerWeek}
+                onChange={(event) => setPlannedWorkoutDaysPerWeek(event.target.value)}
+                required
+                className="mt-1.5 min-h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm text-white"
+              >
+                {Array.from({ length: 7 }, (_, index) => index + 1).map((days) => (
+                  <option key={days} value={days}>
+                    {days} {days === 1 ? "dia" : "dias"} por semana
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs font-medium text-muted">
               Peso atual (kg)
               <input
                 type="number"
@@ -394,6 +595,25 @@ export default function NutritionGoalDashboard() {
                 <p className="flex items-center gap-2 text-sm font-semibold text-white">
                   <Scale className="h-4 w-4 text-brand" />
                   {objectiveLabels[goal.objective]}
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
+                      paceLabel === "Hábitos alinhados" ||
+                      paceLabel === "Ritmo ideal" ||
+                      paceLabel === "Ritmo adequado" ||
+                      paceLabel === "Meta atingida"
+                        ? "bg-emerald-500/10 text-emerald-300"
+                        : "bg-amber-500/10 text-amber-300"
+                    }`}
+                  >
+                    {paceLabel}
+                  </span>
+                </p>
+                <p className="mt-1 text-lg font-bold text-white">
+                  {isRecomposition
+                    ? `Ciclo de definição (${cycleWeeks} semanas)`
+                    : `${goal.objective === "WEIGHT_LOSS" ? "Perder" : "Ganhar"} ${formatKg(
+                        Math.abs((targetWeight ?? 0) - goal.startingWeightKg)
+                      )}`}
                 </p>
                 <p className="mt-1 text-xs text-muted">
                   {formatWeight(goal.startingWeightKg)} no início · {formatWeight(goal.currentWeightKg)} atual
@@ -406,37 +626,158 @@ export default function NutritionGoalDashboard() {
                   ? `${goal.daysRemaining} dias restantes`
                   : "Prazo encerrado"}
               </p>
+              {!isRecomposition && (
+                <p className="text-right text-[10px] text-muted">
+                  Conquistado: <span className="font-semibold text-white">{achievedLabel} ({goalProgress ?? 0}%)</span>
+                </p>
+              )}
             </div>
 
-            {goalProgress !== null ? (
-              <div className="mt-4">
+            <div className="mt-4">
                 <div className="mb-1.5 flex justify-between text-[10px] text-muted">
-                  <span>Progresso em direção ao peso-alvo</span>
-                  <span className="font-mono text-white">{goalProgress}%</span>
+                  <span>{isRecomposition ? "Progresso do ciclo" : "Progresso em direção ao peso-alvo"}</span>
+                  <span className="font-mono text-white">
+                    {isRecomposition ? `${progressValue}%` : `${goalProgress ?? 0}%`}
+                  </span>
                 </div>
                 <div
                   className="h-2 overflow-hidden rounded-full bg-white/[0.08]"
                   role="progressbar"
-                  aria-label="Progresso em direção ao peso-alvo"
-                  aria-valuenow={goalProgress}
+                  aria-label={isRecomposition ? "Progresso do ciclo" : "Progresso em direção ao peso-alvo"}
+                  aria-valuenow={progressValue}
                   aria-valuemin={0}
                   aria-valuemax={100}
                 >
-                  <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${goalProgress}%` }} />
+                  <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${progressValue}%` }} />
                 </div>
-              </div>
-            ) : (
-              <p className="mt-3 text-xs text-muted">
-                Variação desde o início:{" "}
-                <span className="font-semibold text-white">
-                  {goal.currentWeightKg - goal.startingWeightKg > 0 ? "+" : ""}
-                  {(goal.currentWeightKg - goal.startingWeightKg).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg
-                </span>
-                . Na recomposição, a balança não representa sozinha a evolução.
-              </p>
-            )}
+                <div className="mt-1.5 flex justify-between text-[10px] text-muted">
+                  <span>{startLabel}</span>
+                  <span className="font-semibold text-white">{remainingLabel}</span>
+                  <span>{endLabel}</span>
+                </div>
+                {isRecomposition && (
+                  <p className="mt-2 text-[11px] text-muted">
+                    A balança não representa sozinha o progresso na recomposição.
+                  </p>
+                )}
+            </div>
             <p className="mt-3 text-[11px] leading-relaxed text-muted">{goal.calculationNote}</p>
           </div>
+
+          <section
+            className="mt-4 rounded-xl border border-border bg-white/[0.02] p-4 sm:p-5"
+            aria-labelledby="goal-forecast-title"
+          >
+            <h3 id="goal-forecast-title" className="flex items-center gap-2 text-sm font-bold text-white">
+              <Target className="h-4 w-4 text-brand" />
+              Progresso com a rotina atual
+            </h3>
+            <p className="mt-1 text-[11px] text-muted">
+              Estimativa com base nos registros dos últimos 14 dias e nos treinos dos últimos 7 dias.
+            </p>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border border-border p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Treinos</p>
+                <p className="mt-1 font-mono text-lg font-bold text-white">
+                  {workoutsLast7Days} / {plannedWorkoutDays}
+                </p>
+                <p className="text-[10px] text-muted">
+                  {workoutAdherence}% da frequência planejada nesta semana
+                </p>
+              </div>
+              <div className="rounded-lg border border-border p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Consumo médio</p>
+                <p className="mt-1 font-mono text-lg font-bold text-white">
+                  {averageRecordedCalories === null
+                    ? "—"
+                    : `${Math.round(averageRecordedCalories).toLocaleString("pt-BR")} kcal`}
+                </p>
+                <p className="text-[10px] text-muted">
+                  {progress?.recordedIntakeDays ?? 0} dias com refeições registradas
+                </p>
+              </div>
+              <div className="rounded-lg border border-border p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Saldo estimado</p>
+                <p className="mt-1 font-mono text-lg font-bold text-white">
+                  {calorieBalance === null
+                    ? "—"
+                    : `${calorieBalance > 0 ? "+" : ""}${Math.round(calorieBalance).toLocaleString("pt-BR")} kcal/dia`}
+                </p>
+                <p className="text-[10px] text-muted">
+                  Manutenção estimada: {maintenanceCalories?.toLocaleString("pt-BR") ?? "—"} kcal/dia
+                  {weeklyWeightChange !== null && (
+                    <>
+                      {" · "}Ritmo teórico:{" "}
+                      {weeklyWeightChange > 0 ? "+" : ""}
+                      {weeklyWeightChange.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} kg/sem
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-lg bg-white/[0.04] p-3">
+              {goalReached ? (
+                <p className="text-xs leading-relaxed text-white">
+                  Meta de peso atingida. O progresso conquistado foi de {achievedLabel}.
+                </p>
+              ) : isRecomposition ? (
+                <p className="text-xs leading-relaxed text-white">
+                  Ciclo de {cycleWeeks} semanas · {cycleWeeks - cycleCurrentWeek} semanas restantes · término previsto em{" "}
+                  <strong>{formatShortDate(cycleEnd)}</strong>. A evolução corporal não é estimada apenas pelas calorias ou pelo peso.
+                </p>
+              ) : goal.daysRemaining === 0 ? (
+                <p className="text-xs leading-relaxed text-muted">
+                  O prazo definido terminou. Revise a data da meta para exibir uma nova previsão de calendário.
+                </p>
+              ) : forecastWeeks !== null && forecastDate && weeklyWeightChange !== null ? (
+                <p className="text-xs leading-relaxed text-white">
+                  Mantido o ritmo estimado de{" "}
+                  <strong>
+                    {weeklyWeightChange > 0 ? "+" : ""}
+                    {weeklyWeightChange.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} kg/semana
+                  </strong>
+                  , a previsão é alcançar {formatWeight(goal.targetWeightKg!)} em cerca de{" "}
+                  <strong>{forecastWeeks} semanas ({formatShortDate(forecastDate)})</strong>.
+                </p>
+              ) : (progress?.recordedIntakeDays ?? 0) < 7 ? (
+                <p className="text-xs leading-relaxed text-muted">
+                  Registre refeições em pelo menos 7 dias dos últimos 14 para gerar uma previsão mais útil. Dias sem registro não entram como consumo zero.
+                </p>
+              ) : goal.objective === "WEIGHT_LOSS" && calorieBalance !== null && calorieBalance >= 0 ? (
+                <p className="text-xs leading-relaxed text-muted">
+                  Os registros atuais não indicam déficit energético para estimar a chegada ao peso desejado. Compare sua média com a meta diária estimada de {goal.calorieGoal.toLocaleString("pt-BR")} kcal e continue acompanhando o peso.
+                </p>
+              ) : goal.objective === "WEIGHT_LOSS" ? (
+                <p className="text-xs leading-relaxed text-muted">
+                  O déficit atual é pequeno para uma previsão útil. Continue registrando peso e refeições para acompanhar a tendência.
+                </p>
+              ) : calorieBalance !== null && calorieBalance <= 0 ? (
+                <p className="text-xs leading-relaxed text-muted">
+                  Os registros atuais não indicam superávit energético para estimar a chegada ao peso desejado. Compare sua média com a meta diária estimada de {goal.calorieGoal.toLocaleString("pt-BR")} kcal e continue acompanhando o peso.
+                </p>
+              ) : (
+                <p className="text-xs leading-relaxed text-muted">
+                  O superávit atual é pequeno para uma previsão útil. Compare sua média com a meta diária estimada de {goal.calorieGoal.toLocaleString("pt-BR")} kcal.
+                </p>
+              )}
+            </div>
+
+            <div
+              className={`mt-3 rounded-lg border p-3 text-xs leading-relaxed ${
+                paceLabel === "Hábitos alinhados" ||
+                paceLabel === "Ritmo ideal" ||
+                paceLabel === "Ritmo adequado" ||
+                paceLabel === "Meta atingida"
+                  ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-100"
+                  : "border-amber-500/20 bg-amber-500/5 text-amber-100"
+              }`}
+              role="status"
+            >
+              <strong>{paceLabel}:</strong> {diagnostic}
+            </div>
+          </section>
 
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <section className="rounded-xl border border-border p-4" aria-labelledby="weight-progress-title">

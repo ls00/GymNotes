@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useFeed } from "@/hooks/useFeed";
-import type { FeedItem, FeedScope, InteractionRequest } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
+import type { FeedItem, FeedScope, InteractionRequest, MealType } from "@/types";
 import {
+  Archive,
   Check,
   Flame,
   MessageCircle,
@@ -17,6 +19,9 @@ import {
   UserPlus,
   Users,
   X,
+  Pencil,
+  Trash2,
+  Save,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +70,30 @@ function getActivityStats(post: FeedItem) {
   ];
 }
 
+function FeedPhoto({ src, alt }: { src: string; alt: string }) {
+  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={dimensions?.width ?? 1280}
+      height={dimensions?.height ?? 720}
+      unoptimized
+      loading="lazy"
+      decoding="async"
+      onLoad={(event) => {
+        const { naturalWidth, naturalHeight } = event.currentTarget;
+        if (naturalWidth > 0 && naturalHeight > 0) {
+          setDimensions({ width: naturalWidth, height: naturalHeight });
+        }
+      }}
+      style={{ width: "100%", height: "auto" }}
+      className="mt-4 max-h-[28rem] rounded-xl border border-border object-contain"
+    />
+  );
+}
+
 export default function FeedPage() {
   const {
     useSocialFeed,
@@ -73,7 +102,11 @@ export default function FeedPage() {
     useInteract,
     useSendFriendRequest,
     useRespondToFriendRequest,
+    useUpdatePost,
+    useArchivePost,
+    useDeletePost,
   } = useFeed();
+  const { user } = useAuth();
   const [scope, setScope] = useState<FeedScope>("GLOBAL");
   const [feedQuery, setFeedQuery] = useState("");
   const [userQuery, setUserQuery] = useState("");
@@ -94,10 +127,18 @@ export default function FeedPage() {
   const interactMutation = useInteract();
   const sendFriendRequestMutation = useSendFriendRequest();
   const respondToFriendRequestMutation = useRespondToFriendRequest();
+  const updatePostMutation = useUpdatePost();
+  const archivePostMutation = useArchivePost();
+  const deletePostMutation = useDeletePost();
 
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [postErrors, setPostErrors] = useState<Record<string, string>>({});
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editMealType, setEditMealType] = useState<MealType>("SNACK");
+  const [editPhotoUrl, setEditPhotoUrl] = useState("");
   const [shareFeedback, setShareFeedback] = useState<{
     postId: string;
     message: string;
@@ -182,6 +223,75 @@ export default function FeedPage() {
       await respondToFriendRequestMutation.mutateAsync({ friendshipId, accept });
     } catch {
       setFriendError("Não foi possível responder à solicitação. Tente novamente.");
+    }
+  };
+
+  const startEditingPost = (post: FeedItem) => {
+    setEditingPostId(post.id);
+    setEditTitle(post.title);
+    setEditDescription(post.description ?? "");
+    setEditMealType(post.mealDetails?.mealType ?? "SNACK");
+    setEditPhotoUrl(post.photoUrl ?? "");
+    setPostErrors((previous) => ({ ...previous, [post.id]: "" }));
+  };
+
+  const handleUpdatePost = async (post: FeedItem) => {
+    setPostErrors((previous) => ({ ...previous, [post.id]: "" }));
+    try {
+      if (post.activityType === "WORKOUT") {
+        await updatePostMutation.mutateAsync({
+          activityType: post.activityType,
+          id: post.id,
+          title: editTitle,
+          description: editDescription,
+          photoUrl: editPhotoUrl.trim() || null,
+        });
+      } else {
+        await updatePostMutation.mutateAsync({
+          activityType: post.activityType,
+          id: post.id,
+          mealType: editMealType,
+          photoUrl: editPhotoUrl.trim() || null,
+        });
+      }
+      setEditingPostId(null);
+    } catch {
+      setPostErrors((previous) => ({
+        ...previous,
+        [post.id]: "Não foi possível atualizar a publicação. Tente novamente.",
+      }));
+    }
+  };
+
+  const handleArchivePost = async (post: FeedItem) => {
+    if (!window.confirm("Arquivar esta publicação? Ela ficará privada no seu histórico.")) return;
+    setPostErrors((previous) => ({ ...previous, [post.id]: "" }));
+    try {
+      await archivePostMutation.mutateAsync({
+        activityType: post.activityType,
+        id: post.id,
+      });
+    } catch {
+      setPostErrors((previous) => ({
+        ...previous,
+        [post.id]: "Não foi possível arquivar a publicação. Tente novamente.",
+      }));
+    }
+  };
+
+  const handleDeletePost = async (post: FeedItem) => {
+    if (!window.confirm("Excluir esta publicação permanentemente? Esta ação não pode ser desfeita.")) return;
+    setPostErrors((previous) => ({ ...previous, [post.id]: "" }));
+    try {
+      await deletePostMutation.mutateAsync({
+        activityType: post.activityType,
+        id: post.id,
+      });
+    } catch {
+      setPostErrors((previous) => ({
+        ...previous,
+        [post.id]: "Não foi possível excluir a publicação. Tente novamente.",
+      }));
     }
   };
 
@@ -422,26 +532,58 @@ export default function FeedPage() {
                 </div>
               </div>
 
-              <span
-                className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide",
-                  post.activityType === "WORKOUT"
-                    ? "border border-border bg-white/[0.08] text-white"
-                    : "border border-border bg-white/[0.05] text-white"
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide",
+                    post.activityType === "WORKOUT"
+                      ? "border border-border bg-white/[0.08] text-white"
+                      : "border border-border bg-white/[0.05] text-white"
+                  )}
+                >
+                  {post.activityType === "WORKOUT" ? (
+                    <>
+                      <Dumbbell className="h-3 w-3" />
+                      Treino
+                    </>
+                  ) : (
+                    <>
+                      <Utensils className="h-3 w-3" />
+                      Refeição
+                    </>
+                  )}
+                </span>
+                {post.authorId === user?.id && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => startEditingPost(post)}
+                      aria-label="Editar publicação"
+                      className="flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-border text-muted transition hover:text-white"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleArchivePost(post)}
+                      disabled={archivePostMutation.isPending}
+                      aria-label="Arquivar publicação"
+                      className="flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-border text-muted transition hover:text-white disabled:opacity-50"
+                    >
+                      <Archive className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDeletePost(post)}
+                      disabled={deletePostMutation.isPending}
+                      aria-label="Excluir publicação"
+                      className="flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-border text-muted transition hover:text-white disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 )}
-              >
-                {post.activityType === "WORKOUT" ? (
-                  <>
-                    <Dumbbell className="h-3 w-3" />
-                    Treino
-                  </>
-                ) : (
-                  <>
-                    <Utensils className="h-3 w-3" />
-                    Refeição
-                  </>
-                )}
-              </span>
+              </div>
             </div>
 
             {/* Post Content */}
@@ -453,18 +595,90 @@ export default function FeedPage() {
                 {post.description || "Atividade compartilhada."}
               </p>
               {post.photoUrl && (
-                <Image
-                  src={post.photoUrl}
-                  alt={`Foto de ${post.title}`}
-                  width={1280}
-                  height={720}
-                  unoptimized
-                  loading="lazy"
-                  decoding="async"
-                  className="mt-4 max-h-[28rem] w-full rounded-xl border border-border object-cover"
-                />
+                <FeedPhoto src={post.photoUrl} alt={`Foto de ${post.title}`} />
               )}
             </div>
+
+            {editingPostId === post.id && (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void handleUpdatePost(post);
+                }}
+                className="mt-4 space-y-3 rounded-xl border border-border bg-white/[0.03] p-4"
+              >
+                {post.activityType === "WORKOUT" ? (
+                  <>
+                    <label className="block text-xs font-semibold text-muted">
+                      Título
+                      <input
+                        required
+                        maxLength={150}
+                        value={editTitle}
+                        onChange={(event) => setEditTitle(event.target.value)}
+                        className="mt-1 min-h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-white outline-none focus:border-brand"
+                      />
+                    </label>
+                    <label className="block text-xs font-semibold text-muted">
+                      Descrição
+                      <textarea
+                        maxLength={1000}
+                        value={editDescription}
+                        onChange={(event) => setEditDescription(event.target.value)}
+                        rows={3}
+                        className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-white outline-none focus:border-brand"
+                      />
+                    </label>
+                  </>
+                ) : (
+                  <label className="block text-xs font-semibold text-muted">
+                    Tipo da refeição
+                    <select
+                      value={editMealType}
+                      onChange={(event) => setEditMealType(event.target.value as MealType)}
+                      className="mt-1 min-h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-white outline-none focus:border-brand"
+                    >
+                      <option value="BREAKFAST">Café da manhã</option>
+                      <option value="MORNING_SNACK">Lanche da manhã</option>
+                      <option value="LUNCH">Almoço</option>
+                      <option value="AFTERNOON_SNACK">Lanche da tarde</option>
+                      <option value="PRE_WORKOUT">Pré-treino</option>
+                      <option value="POST_WORKOUT">Pós-treino</option>
+                      <option value="DINNER">Jantar</option>
+                      <option value="SUPPER">Ceia</option>
+                      <option value="SNACK">Lanche</option>
+                    </select>
+                  </label>
+                )}
+                <label className="block text-xs font-semibold text-muted">
+                  URL da imagem (opcional)
+                  <input
+                    type="text"
+                    value={editPhotoUrl}
+                    onChange={(event) => setEditPhotoUrl(event.target.value)}
+                    placeholder="https://..."
+                    className="mt-1 min-h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-white outline-none focus:border-brand"
+                  />
+                </label>
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingPostId(null)}
+                    className="min-h-9 rounded-lg border border-border px-3 text-xs font-semibold text-muted hover:text-white"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={updatePostMutation.isPending}
+                    className="flex min-h-9 items-center gap-2 rounded-lg bg-brand px-3 text-xs font-semibold text-rich disabled:opacity-50"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    {updatePostMutation.isPending ? "Salvando..." : "Salvar"}
+                  </button>
+                </div>
+              </form>
+            )}
 
             {/* Metrics Chips */}
             <div className="mt-5 grid grid-cols-3 divide-x divide-brand-line border-y border-border py-3">

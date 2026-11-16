@@ -1,11 +1,12 @@
 package com.gymnotes.dto;
 
+import com.gymnotes.domain.enums.MuscleGroup;
+import com.gymnotes.domain.enums.WorkoutTechnique;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-
 import java.util.List;
 import java.util.UUID;
 
@@ -26,5 +27,32 @@ public record WorkoutPlanExerciseDTO(
         @NotEmpty(message = "O exercício deve conter ao menos uma série planejada.")
         @Size(max = 30, message = "Cada exercício pode ter no máximo 30 séries planejadas.")
         @Valid
-        List<@NotNull @Valid WorkoutPlanSetDTO> sets
-) {}
+        List<@NotNull @Valid WorkoutPlanSetDTO> sets,
+
+        WorkoutTechnique technique,
+
+        List<MuscleGroup> secondaryMuscleGroups
+) {
+    public WorkoutPlanExerciseDTO(
+            UUID exerciseId,
+            String exerciseName,
+            String muscleGroup,
+            String equipment,
+            Integer exerciseOrder,
+            List<WorkoutPlanSetDTO> sets
+    ) {
+        this(exerciseId, exerciseName, muscleGroup, equipment, exerciseOrder, sets, null, null);
+    }
+
+    public WorkoutPlanExerciseDTO(
+            UUID exerciseId,
+            String exerciseName,
+            String muscleGroup,
+            String equipment,
+            Integer exerciseOrder,
+            List<WorkoutPlanSetDTO> sets,
+            WorkoutTechnique technique
+    ) {
+        this(exerciseId, exerciseName, muscleGroup, equipment, exerciseOrder, sets, technique, null);
+    }
+}

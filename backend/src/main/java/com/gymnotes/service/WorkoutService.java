@@ -6,6 +6,7 @@ import com.gymnotes.domain.WorkoutPlan;
 import com.gymnotes.domain.WorkoutPlanSet;
 import com.gymnotes.domain.WorkoutSession;
 import com.gymnotes.domain.WorkoutSet;
+import com.gymnotes.domain.enums.WorkoutTechnique;
 import com.gymnotes.dto.*;
 import com.gymnotes.exception.ResourceNotFoundException;
 import com.gymnotes.repository.ExerciseRepository;
@@ -112,6 +113,11 @@ public class WorkoutService {
                     .weightKg(setDto.weightKg())
                     .rpe(setDto.rpe())
                     .isWarmup(Boolean.TRUE.equals(setDto.isWarmup()))
+                    .technique(setDto.technique() != null
+                            ? setDto.technique()
+                            : WorkoutTechnique.NORMAL)
+                    .durationMinutes(setDto.durationMinutes())
+                    .distanceKm(setDto.distanceKm())
                     .build();
 
             session.addSet(set);
@@ -119,6 +125,28 @@ public class WorkoutService {
 
         WorkoutSession savedSession = workoutSessionRepository.save(session);
         return WorkoutSessionResponseDTO.fromEntity(savedSession);
+    }
+
+    @Transactional
+    public WorkoutSessionResponseDTO updateSessionPost(
+            UUID userId, UUID sessionId, UpdateWorkoutPostDTO request) {
+        WorkoutSession session = findOwnedSession(userId, sessionId);
+        session.setTitle(request.title().trim());
+        session.setNotes(request.notes());
+        session.setPhotoUrl(request.photoUrl());
+        return WorkoutSessionResponseDTO.fromEntity(workoutSessionRepository.save(session));
+    }
+
+    @Transactional
+    public void archiveSessionPost(UUID userId, UUID sessionId) {
+        WorkoutSession session = findOwnedSession(userId, sessionId);
+        session.setIsPublic(false);
+        workoutSessionRepository.save(session);
+    }
+
+    @Transactional
+    public void deleteSession(UUID userId, UUID sessionId) {
+        workoutSessionRepository.delete(findOwnedSession(userId, sessionId));
     }
 
     @Transactional(readOnly = true)
@@ -153,6 +181,12 @@ public class WorkoutService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com o ID: " + userId));
     }
 
+    private WorkoutSession findOwnedSession(UUID userId, UUID sessionId) {
+        return workoutSessionRepository.findByIdAndUserIdWithSets(sessionId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Sessão de treino não encontrada: " + sessionId));
+    }
+
     private void replacePlanSets(WorkoutPlan plan, List<WorkoutPlanExerciseDTO> plannedExercises) {
         plan.clearSets();
         if (plannedExercises == null || plannedExercises.isEmpty()) {
@@ -180,6 +214,11 @@ public class WorkoutService {
                         .setOrder(plannedSet.setOrder())
                         .reps(plannedSet.reps())
                         .weightKg(plannedSet.weightKg())
+                        .technique(plannedExercise.technique() != null
+                                ? plannedExercise.technique()
+                                : WorkoutTechnique.NORMAL)
+                        .durationMinutes(plannedSet.durationMinutes())
+                        .distanceKm(plannedSet.distanceKm())
                         .build());
             }
         }

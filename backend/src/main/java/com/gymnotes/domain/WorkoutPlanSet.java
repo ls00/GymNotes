@@ -1,5 +1,6 @@
 package com.gymnotes.domain;
 
+import com.gymnotes.domain.enums.WorkoutTechnique;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -39,4 +40,15 @@ public class WorkoutPlanSet {
 
     @Column(name = "weight_kg", nullable = false, precision = 6, scale = 2)
     private BigDecimal weightKg;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "technique", nullable = false, length = 30)
+    @Builder.Default
+    private WorkoutTechnique technique = WorkoutTechnique.NORMAL;
+
+    @Column(name = "duration_minutes")
+    private Integer durationMinutes;
+
+    @Column(name = "distance_km", precision = 7, scale = 2)
+    private BigDecimal distanceKm;
 }

@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type MouseEvent } from "react";
-import { Dumbbell, Flame, Utensils, type LucideIcon } from "lucide-react";
+import {
+  Dumbbell,
+  Flame,
+  Target,
+  Utensils,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +43,20 @@ const NAV_ITEMS: NavigationItem[] = [
     href: "/feed",
     icon: Flame,
     activeIcon: Flame,
+  },
+  {
+    id: "objective",
+    label: "Objetivo",
+    href: "/objective",
+    icon: Target,
+    activeIcon: Target,
+  },
+  {
+    id: "profile",
+    label: "Perfil",
+    href: "/profile",
+    icon: UserRound,
+    activeIcon: UserRound,
   },
 ];
 
@@ -77,19 +98,30 @@ export function BottomNav({ feedHasUpdates = false }: BottomNavProps) {
         aria-label="Navegação principal"
         className="bottom-nav-glass fixed left-1/2 z-50 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 md:hidden"
       >
-        <div className="bottom-nav-track">
+        <div
+          className="bottom-nav-track"
+          style={{
+            gridTemplateColumns: `repeat(${NAV_ITEMS.length}, minmax(0, 1fr))`,
+          }}
+        >
           {activeIndex >= 0 && (
             <>
               <span
                 aria-hidden="true"
                 className="bottom-nav-indicator bottom-nav-indicator-slide"
-                style={{ transform: `translateX(${activeIndex * 100}%)` }}
+                style={{
+                  width: `calc(100% / ${NAV_ITEMS.length})`,
+                  transform: `translateX(${activeIndex * 100}%)`,
+                }}
               />
               <span
                 aria-hidden="true"
                 className="bottom-nav-indicator bottom-nav-indicator-fade"
                 key={activeIndex}
-                style={{ transform: `translateX(${activeIndex * 100}%)` }}
+                style={{
+                  width: `calc(100% / ${NAV_ITEMS.length})`,
+                  transform: `translateX(${activeIndex * 100}%)`,
+                }}
               />
             </>
           )}

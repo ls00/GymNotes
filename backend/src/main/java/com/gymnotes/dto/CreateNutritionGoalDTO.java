@@ -18,6 +18,7 @@ public record CreateNutritionGoalDTO(
     @NotNull @Min(18) @Max(100) Integer age,
     @NotNull @DecimalMin("120") @DecimalMax("230") BigDecimal heightCm,
     @NotNull ActivityLevel activityLevel,
+    @NotNull @Min(1) @Max(7) Integer plannedWorkoutDaysPerWeek,
     @NotNull @DecimalMin("30") @DecimalMax("350") BigDecimal currentWeightKg,
     @DecimalMin("30") @DecimalMax("350") BigDecimal targetWeightKg,
     @NotNull LocalDate targetDate

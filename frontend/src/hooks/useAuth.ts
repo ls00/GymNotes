@@ -3,14 +3,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { api } from "@/services/api";
-import { AuthResponse, LoginRequest, RegisterRequest, UserSummary } from "@/types";
+import {
+  AuthResponse,
+  LoginRequest,
+  RegisterRequest,
+  UpdateProfileRequest,
+  UserSummary,
+} from "@/types";
 
 export function useAuth() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
   // Query para perfil do usuário autenticado
-  const { data: user, isLoading: isLoadingProfile } = useQuery<UserSummary>({
+  const {
+    data: user,
+    isLoading: isLoadingProfile,
+    isError: isProfileError,
+    refetch: refetchProfile,
+  } = useQuery<UserSummary>({
     queryKey: ["auth", "me"],
     queryFn: async () => {
       const response = await api.get<UserSummary>("/users/me");
@@ -18,6 +29,17 @@ export function useAuth() {
     },
     enabled: typeof window !== "undefined" && !!localStorage.getItem("gymnotes_token"),
     retry: false,
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (profile: UpdateProfileRequest) => {
+      const response = await api.put<UserSummary>("/users/me", profile);
+      return response.data;
+    },
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData(["auth", "me"], updatedUser);
+      localStorage.setItem("gymnotes_user", JSON.stringify(updatedUser));
+    },
   });
 
   // Mutação para Login
@@ -62,6 +84,10 @@ export function useAuth() {
   return {
     user,
     isLoadingProfile,
+    isProfileError,
+    refetchProfile,
+    updateProfile: updateProfileMutation.mutateAsync,
+    isUpdatingProfile: updateProfileMutation.isPending,
     login: loginMutation.mutateAsync,
     isLoggingIn: loginMutation.isPending,
     loginError: loginMutation.error,

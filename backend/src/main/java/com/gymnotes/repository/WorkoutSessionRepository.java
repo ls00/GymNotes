@@ -13,6 +13,13 @@ import java.util.UUID;
 @Repository
 public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, UUID> {
 
+    @Query("SELECT COUNT(ws) FROM WorkoutSession ws " +
+           "WHERE ws.user.id = :userId AND ws.startedAt >= :start AND ws.startedAt < :end")
+    long countByUserIdAndStartedAtBetween(
+            @Param("userId") UUID userId,
+            @Param("start") java.time.Instant start,
+            @Param("end") java.time.Instant end);
+
     @Query("SELECT DISTINCT ws FROM WorkoutSession ws " +
            "LEFT JOIN FETCH ws.sets s " +
            "LEFT JOIN FETCH s.exercise " +
@@ -38,7 +45,7 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
     @Query("SELECT DISTINCT ws FROM WorkoutSession ws " +
            "LEFT JOIN FETCH ws.sets s " +
            "LEFT JOIN FETCH s.exercise " +
-           "WHERE ws.isPublic = true AND ws.user.id <> :excludedUserId " +
+           "WHERE ws.isPublic = true " +
            "AND (:query = '' OR LOCATE(LOWER(:query), LOWER(ws.title)) > 0 " +
            "OR LOCATE(LOWER(:query), LOWER(COALESCE(ws.notes, ''))) > 0 " +
            "OR LOCATE(LOWER(:query), LOWER(ws.user.name)) > 0 " +
@@ -47,7 +54,6 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
            "AND LOCATE(LOWER(:query), LOWER(setItem.exercise.name)) > 0)) " +
            "ORDER BY ws.startedAt DESC")
     List<WorkoutSession> searchGlobalPublicSessions(
-            @Param("excludedUserId") UUID excludedUserId,
             @Param("query") String query,
             org.springframework.data.domain.Pageable pageable);
 

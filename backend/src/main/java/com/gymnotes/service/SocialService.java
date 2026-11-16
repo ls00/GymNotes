@@ -171,10 +171,10 @@ public class SocialService {
     @Transactional(readOnly = true)
     public List<FeedItemDTO> getFeed(UUID userId, FeedScope scope, String query, Pageable pageable) {
         List<UUID> visibleUserIds = scope == FeedScope.FRIENDS
-                ? friendshipRepository.findAcceptedFriendIds(userId)
+                ? new ArrayList<>(friendshipRepository.findAcceptedFriendIds(userId))
                 : List.of();
-        if (scope == FeedScope.FRIENDS && visibleUserIds.isEmpty()) {
-            return List.of();
+        if (scope == FeedScope.FRIENDS) {
+            visibleUserIds.add(userId);
         }
 
         int feedQueryLimit = Math.toIntExact(Math.addExact(pageable.getOffset(), (long) pageable.getPageSize()));
@@ -185,9 +185,9 @@ public class SocialService {
         List<MealLog> meals;
         if (scope == FeedScope.GLOBAL) {
             sessions = workoutSessionRepository.searchGlobalPublicSessions(
-                    userId, normalizedQuery, feedSourcePageable);
+                    normalizedQuery, feedSourcePageable);
             meals = mealLogRepository.searchGlobalPublicMeals(
-                    userId, normalizedQuery, feedSourcePageable);
+                    normalizedQuery, feedSourcePageable);
         } else {
             sessions = workoutSessionRepository.searchFriendsPublicSessions(
                     visibleUserIds, normalizedQuery, feedSourcePageable);

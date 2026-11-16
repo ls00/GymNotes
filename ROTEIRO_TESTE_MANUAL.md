@@ -28,7 +28,7 @@ Este roteiro foi preparado para testar o site pelo navegador, sem ferramentas de
 ## 2. Navegação e uso em telas diferentes
 
 1. Entre na conta de teste.
-2. Use a navegação **Treinos**, **Nutrição** e **Feed**; confirme que cada opção abre a tela correspondente.
+2. Use a navegação **Treinos**, **Nutrição**, **Objetivo** e **Feed**; confirme que cada opção abre a tela correspondente.
 3. Volte à tela de treinos pelo logotipo ou pela navegação.
 4. Repita em uma janela estreita ou no celular.
    - Esperado: a navegação continua acessível, os textos e botões não ficam cortados e não aparece rolagem horizontal indesejada.
@@ -38,19 +38,21 @@ Este roteiro foi preparado para testar o site pelo navegador, sem ferramentas de
 
 Esses passos salvam uma ficha e uma sessão na conta de teste.
 
-1. Em **Treinos**, procure um exercício comum, por exemplo `agachamento`. Confirme que aparecem resultados.
-2. Tente uma busca sem resultados. Confirme que o app informa que não encontrou exercícios e continua respondendo.
-3. Selecione um exercício encontrado.
-4. Em **Nome do treino**, informe `Teste GymNotes - [data de hoje]`.
-5. Opcional: selecione **Criar ficha**, digite `Ficha teste - [data de hoje]` e salve. Confirme que a ficha pode ser selecionada.
-6. Adicione uma série. Informe uma carga e repetições plausíveis para você; marque a série como concluída.
-7. Adicione uma segunda série com valores diferentes e marque-a como concluída.
-8. Teste o controle de descanso: inicie e pare o timer.
-9. Se quiser que o treino apareça no Feed, marque **Compartilhar este treino no feed**.
-10. Pressione **Finalizar sessão de treino** uma única vez.
+1. Em **Treinos**, procure `máquina` e confirme que aparecem exercícios de máquinas.
+2. Selecione o grupo **Peito** e pesquise `tríceps`; confirme que exercícios compostos, como supino, também aparecem pelos grupos secundários.
+3. Tente uma busca sem resultados. Confirme que o app informa que não encontrou exercícios e continua respondendo.
+4. Selecione um exercício encontrado.
+5. Em **Nome do treino**, informe `Teste GymNotes - [data de hoje]`.
+6. Opcional: crie uma ficha, selecione uma técnica (por exemplo, drop set ou bi-set) e salve. Confirme que a técnica permanece ao reabrir a ficha.
+7. Adicione uma série. Informe uma carga e repetições plausíveis para você; marque a série como concluída.
+8. Adicione uma segunda série com valores diferentes e marque-a como concluída.
+9. Teste também uma atividade de cardio: informe duração e distância e confirme que não são solicitadas carga/repetições.
+10. Teste o controle de descanso: inicie e pare o timer.
+11. Se quiser que o treino apareça no Feed, marque **Compartilhar este treino no feed**.
+12. Pressione **Finalizar sessão de treino** uma única vez.
     - Esperado: aparece confirmação de sessão salva; o botão não cria uma segunda sessão quando clicado novamente.
-11. Confira **Histórico de treinos**. O treino recém-salvo deve aparecer com título, data, exercício e quantidade de séries.
-12. Recarregue a página e confira se o treino continua no histórico.
+13. Confira **Histórico de treinos**. O treino recém-salvo deve aparecer com título, data, exercícios e quantidade de séries.
+14. Recarregue a página e confira se o treino continua no histórico, incluindo os dados de cardio.
 
 ## 4. Nutrição e refeição
 
@@ -67,7 +69,17 @@ Este passo registra uma refeição na conta de teste.
    - Esperado: não é possível salvar uma refeição inválida. Cancele o formulário sem enviar.
 8. Recarregue a página e confirme que o resumo continua atualizado.
 
-## 5. Feed, curtida, comentário e compartilhamento
+## 5. Objetivo e projeção de progresso
+
+1. Abra **Objetivo** e defina um objetivo de teste: emagrecer, crescer ou definir.
+2. Informe peso atual, peso desejado quando aplicável, prazo, dados físicos, nível de atividade e frequência planejada de treinos por semana.
+3. Salve e confirme que o painel mostra o objetivo, a barra de progresso (ou o ciclo para definição) e a meta calórica estimada.
+4. Registre uma pesagem e confirme que o peso atual e o progresso são atualizados.
+5. Confira o número de treinos realizados nos últimos 7 dias e a média de calorias baseada apenas nos dias com refeições registradas.
+6. Com menos de 7 dias registrados dos últimos 14, confirme que o painel informa que ainda não há dados suficientes para uma previsão, sem contar dias sem registro como consumo zero.
+7. Com pelo menos 7 dias registrados, confira o ritmo estimado, a projeção de prazo e o diagnóstico correspondente ao objetivo. Para **Definir**, confirme que o progresso é apresentado como ciclo e que a tela não promete uma mudança de peso.
+
+## 6. Feed, curtida, comentário e compartilhamento
 
 Os testes de interação podem gravar curtidas e comentários. Comentários publicados não devem ser considerados removíveis pelo roteiro.
 

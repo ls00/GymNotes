@@ -1,4 +1,5 @@
 import type { Exercise } from "@/types";
+import type { WorkoutTechnique } from "@/types";
 
 const muscleGroupLabels: Record<string, string> = {
   CHEST: "PEITO",
@@ -72,6 +73,16 @@ const exerciseNameLabels: Record<string, string> = {
   "Bicicleta de spinning": "Bicicleta de ciclismo indoor",
 };
 
+export const workoutTechniqueOptions: { value: WorkoutTechnique; label: string }[] = [
+  { value: "NORMAL", label: "Séries normais" },
+  { value: "DROP_SET", label: "Drop set" },
+  { value: "BI_SET", label: "Bi-set" },
+  { value: "SUPER_SET", label: "Super set" },
+  { value: "TRI_SET", label: "Tri-set" },
+  { value: "REST_PAUSE", label: "Rest-pause" },
+  { value: "GIANT_SET", label: "Série gigante" },
+];
+
 function normalizeText(value: string) {
   return value
     .normalize("NFD")
@@ -93,12 +104,18 @@ export function getEquipmentLabel(equipment: string) {
 }
 
 export function getExerciseDetails(exercise: Exercise) {
-  const muscleGroup = getMuscleGroupLabel(exercise.muscleGroup);
+  const muscleGroups = [
+    exercise.muscleGroup,
+    ...(exercise.secondaryMuscleGroups ?? []),
+  ]
+    .filter((group, index, groups) => group && groups.indexOf(group) === index)
+    .map(getMuscleGroupLabel)
+    .join(" + ");
   const equipment = exercise.equipment
     ? getEquipmentLabel(exercise.equipment)
     : null;
 
-  return equipment ? `${muscleGroup} · ${equipment}` : muscleGroup;
+  return equipment ? `${muscleGroups} · ${equipment}` : muscleGroups;
 }
 
 export function filterExercisesByPortugueseName(
@@ -108,14 +125,14 @@ export function filterExercisesByPortugueseName(
   const normalizedQuery = normalizeText(query);
   if (!normalizedQuery) return exercises;
 
-  const muscleGroupMatches = exercises.filter((exercise) =>
-    normalizeText(getMuscleGroupLabel(exercise.muscleGroup)).startsWith(
-      normalizedQuery
-    )
-  );
-  if (muscleGroupMatches.length > 0) return muscleGroupMatches;
-
   return exercises.filter((exercise) =>
-    normalizeText(getExerciseName(exercise.name)).includes(normalizedQuery)
+    normalizeText(
+      [
+        getExerciseName(exercise.name),
+        getMuscleGroupLabel(exercise.muscleGroup),
+        ...(exercise.secondaryMuscleGroups ?? []).map(getMuscleGroupLabel),
+        ...(exercise.equipment ? [getEquipmentLabel(exercise.equipment)] : []),
+      ].join(" ")
+    ).includes(normalizedQuery)
   );
 }

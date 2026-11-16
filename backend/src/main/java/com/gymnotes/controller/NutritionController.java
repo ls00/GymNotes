@@ -19,6 +19,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/nutrition")
@@ -76,6 +77,33 @@ public class NutritionController {
             @Valid @RequestBody LogMealDTO request) {
         MealLogResponseDTO response = nutritionService.logMeal(principal.getId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/meals/{mealId}")
+    @Operation(summary = "Editar publicação de refeição", description = "Atualiza o tipo e a foto de uma refeição do usuário autenticado.")
+    public ResponseEntity<MealLogResponseDTO> updateMealPost(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID mealId,
+            @Valid @RequestBody UpdateMealPostDTO request) {
+        return ResponseEntity.ok(nutritionService.updateMealPost(principal.getId(), mealId, request));
+    }
+
+    @PostMapping("/meals/{mealId}/archive")
+    @Operation(summary = "Arquivar publicação de refeição", description = "Torna privada uma refeição pública sem removê-la do histórico.")
+    public ResponseEntity<Void> archiveMealPost(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID mealId) {
+        nutritionService.archiveMealPost(principal.getId(), mealId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/meals/{mealId}")
+    @Operation(summary = "Excluir publicação de refeição", description = "Remove permanentemente uma refeição do usuário autenticado.")
+    public ResponseEntity<Void> deleteMeal(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID mealId) {
+        nutritionService.deleteMeal(principal.getId(), mealId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/summary/daily")

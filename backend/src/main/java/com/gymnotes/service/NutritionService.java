@@ -83,6 +83,26 @@ public class NutritionService {
         return MealLogResponseDTO.fromEntity(savedMealLog);
     }
 
+    @Transactional
+    public MealLogResponseDTO updateMealPost(UUID userId, UUID mealId, UpdateMealPostDTO request) {
+        MealLog mealLog = findOwnedMeal(userId, mealId);
+        mealLog.setMealType(request.mealType());
+        mealLog.setPhotoUrl(request.photoUrl());
+        return MealLogResponseDTO.fromEntity(mealLogRepository.save(mealLog));
+    }
+
+    @Transactional
+    public void archiveMealPost(UUID userId, UUID mealId) {
+        MealLog mealLog = findOwnedMeal(userId, mealId);
+        mealLog.setIsPublic(false);
+        mealLogRepository.save(mealLog);
+    }
+
+    @Transactional
+    public void deleteMeal(UUID userId, UUID mealId) {
+        mealLogRepository.delete(findOwnedMeal(userId, mealId));
+    }
+
     @Transactional(readOnly = true)
     public DailyNutritionSummaryDTO getDailySummary(UUID userId, LocalDate date) {
         User user = findUserById(userId);
@@ -152,5 +172,10 @@ public class NutritionService {
     private User findUserById(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com ID: " + userId));
+    }
+
+    private MealLog findOwnedMeal(UUID userId, UUID mealId) {
+        return mealLogRepository.findByIdAndUserId(mealId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Refeição não encontrada: " + mealId));
     }
 }

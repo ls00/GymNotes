@@ -2,25 +2,34 @@
 
 import { useState } from "react";
 import { useWorkouts } from "@/hooks/useWorkouts";
-import type { CreateWorkoutPlan, Exercise, WorkoutPlan } from "@/types";
+import type {
+  CreateWorkoutPlan,
+  Exercise,
+  WorkoutPlan,
+  WorkoutTechnique,
+} from "@/types";
 import { Check, Plus, Search, Trash2, X } from "lucide-react";
 import SetValueInput from "./SetValueInput";
 import {
   filterExercisesByPortugueseName,
+  getExerciseDetails,
   getExerciseName,
-  getMuscleGroupLabel,
+  workoutTechniqueOptions,
 } from "./exerciseLabels";
 
 interface PlannedSetDraft {
   id: string;
   reps: number;
   weightKg: number;
+  durationMinutes: number;
+  distanceKm: number;
 }
 
 interface PlannedExerciseDraft {
   id: string;
   exercise: Exercise;
   sets: PlannedSetDraft[];
+  technique: WorkoutTechnique;
 }
 
 interface WorkoutPlanEditorProps {
@@ -29,8 +38,13 @@ interface WorkoutPlanEditorProps {
   onSaved: (plan: WorkoutPlan) => void;
 }
 
-function createPlannedSet(reps = 8, weightKg = 0): PlannedSetDraft {
-  return { id: crypto.randomUUID(), reps, weightKg };
+function createPlannedSet(
+  reps = 8,
+  weightKg = 0,
+  durationMinutes = 20,
+  distanceKm = 0
+): PlannedSetDraft {
+  return { id: crypto.randomUUID(), reps, weightKg, durationMinutes, distanceKm };
 }
 
 function createPlannedExercises(plan: WorkoutPlan | null): PlannedExerciseDraft[] {
@@ -41,9 +55,16 @@ function createPlannedExercises(plan: WorkoutPlan | null): PlannedExerciseDraft[
       name: plannedExercise.exerciseName,
       muscleGroup: plannedExercise.muscleGroup ?? "",
       equipment: plannedExercise.equipment,
+      secondaryMuscleGroups: plannedExercise.secondaryMuscleGroups,
     },
+    technique: plannedExercise.technique ?? "NORMAL",
     sets: plannedExercise.sets.map((set) =>
-      createPlannedSet(set.reps, set.weightKg)
+      createPlannedSet(
+        set.reps,
+        set.weightKg,
+        set.durationMinutes ?? 20,
+        set.distanceKm ?? 0
+      )
     ),
   }));
 }
@@ -74,6 +95,7 @@ export default function WorkoutPlanEditor({
         id: crypto.randomUUID(),
         exercise,
         sets: [createPlannedSet(), createPlannedSet(), createPlannedSet()],
+        technique: "NORMAL",
       },
     ]);
     setQuery("");
@@ -82,7 +104,9 @@ export default function WorkoutPlanEditor({
   const updateSet = (
     exerciseId: string,
     setId: string,
-    updates: Partial<Pick<PlannedSetDraft, "reps" | "weightKg">>
+    updates: Partial<
+      Pick<PlannedSetDraft, "reps" | "weightKg" | "durationMinutes" | "distanceKm">
+    >
   ) => {
     setPlannedExercises((current) =>
       current.map((item) =>
@@ -98,6 +122,12 @@ export default function WorkoutPlanEditor({
     );
   };
 
+  const updateTechnique = (exerciseId: string, technique: WorkoutTechnique) => {
+    setPlannedExercises((current) =>
+      current.map((item) => (item.id === exerciseId ? { ...item, technique } : item))
+    );
+  };
+
   const addSet = (exerciseId: string) => {
     setPlannedExercises((current) =>
       current.map((item) =>
@@ -108,7 +138,9 @@ export default function WorkoutPlanEditor({
                 ...item.sets,
                 createPlannedSet(
                   item.sets.at(-1)?.reps ?? 8,
-                  item.sets.at(-1)?.weightKg ?? 0
+                  item.sets.at(-1)?.weightKg ?? 0,
+                  item.sets.at(-1)?.durationMinutes ?? 20,
+                  item.sets.at(-1)?.distanceKm ?? 0
                 ),
               ],
             }
@@ -147,11 +179,15 @@ export default function WorkoutPlanEditor({
         (exercise) =>
           exercise.sets.length === 0 ||
           exercise.sets.some(
-            (set) =>
-              !Number.isInteger(set.reps) ||
-              set.reps <= 0 ||
-              !Number.isFinite(set.weightKg) ||
-              set.weightKg < 0
+            (set) => exercise.exercise.muscleGroup === "CARDIO"
+              ? !Number.isInteger(set.durationMinutes) ||
+                set.durationMinutes <= 0 ||
+                !Number.isFinite(set.distanceKm) ||
+                set.distanceKm < 0
+              : !Number.isInteger(set.reps) ||
+                set.reps <= 0 ||
+                !Number.isFinite(set.weightKg) ||
+                set.weightKg < 0
           )
       )
     ) {
@@ -165,11 +201,17 @@ export default function WorkoutPlanEditor({
       exercises: plannedExercises.map((item, exerciseIndex) => ({
         exerciseId: item.exercise.id,
         exerciseName: item.exercise.name,
+        secondaryMuscleGroups: item.exercise.secondaryMuscleGroups,
         exerciseOrder: exerciseIndex + 1,
+        technique: item.technique,
         sets: item.sets.map((set, setIndex) => ({
           setOrder: setIndex + 1,
-          reps: set.reps,
-          weightKg: set.weightKg,
+          reps: item.exercise.muscleGroup === "CARDIO" ? 1 : set.reps,
+          weightKg: item.exercise.muscleGroup === "CARDIO" ? 0 : set.weightKg,
+          durationMinutes:
+            item.exercise.muscleGroup === "CARDIO" ? set.durationMinutes : undefined,
+          distanceKm:
+            item.exercise.muscleGroup === "CARDIO" ? set.distanceKm : undefined,
         })),
       })),
     };
@@ -306,7 +348,7 @@ export default function WorkoutPlanEditor({
                       </p>
                       {item.exercise.muscleGroup && (
                         <p className="text-[10px] text-muted">
-                          {getMuscleGroupLabel(item.exercise.muscleGroup)}
+                          {getExerciseDetails(item.exercise)}
                         </p>
                       )}
                     </div>
@@ -321,11 +363,28 @@ export default function WorkoutPlanEditor({
                   </button>
                 </div>
 
+                <label className="mt-3 block text-[10px] font-semibold text-muted">
+                  Técnica
+                  <select
+                    value={item.technique}
+                    onChange={(event) =>
+                      updateTechnique(item.id, event.target.value as WorkoutTechnique)
+                    }
+                    className="mt-1 min-h-10 w-full rounded-lg border border-border bg-surface px-3 text-xs text-white outline-none focus:border-brand"
+                  >
+                    {workoutTechniqueOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
                 <div className="mt-3 space-y-2">
                   <div className="grid grid-cols-[2rem_1fr_1fr_2rem] gap-2 px-1 text-[9px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[2.5rem_1fr_1fr_2.5rem]">
                     <span>Série</span>
-                    <span>Carga (kg)</span>
-                    <span>Repetições</span>
+                    <span>{item.exercise.muscleGroup === "CARDIO" ? "Duração (min)" : "Carga (kg)"}</span>
+                    <span>{item.exercise.muscleGroup === "CARDIO" ? "Distância (km)" : "Repetições"}</span>
                     <span className="sr-only">Ações</span>
                   </div>
                   {item.sets.map((set, setIndex) => (
@@ -336,26 +395,55 @@ export default function WorkoutPlanEditor({
                       <span className="text-center font-mono text-xs text-muted">
                         {setIndex + 1}
                       </span>
-                      <SetValueInput
-                        label={`Carga planejada da série ${setIndex + 1} de ${getExerciseName(item.exercise.name)}`}
-                        value={set.weightKg}
-                        min={0}
-                        step={0.5}
-                        inputMode="decimal"
-                        increments={[-10, -5, 5, 10]}
-                        onChange={(weightKg) =>
-                          updateSet(item.id, set.id, { weightKg })
-                        }
-                      />
-                      <SetValueInput
-                        label={`Repetições planejadas da série ${setIndex + 1} de ${getExerciseName(item.exercise.name)}`}
-                        value={set.reps}
-                        min={1}
-                        step={1}
-                        inputMode="numeric"
-                        increments={[-1, 1]}
-                        onChange={(reps) => updateSet(item.id, set.id, { reps })}
-                      />
+                      {item.exercise.muscleGroup === "CARDIO" ? (
+                        <>
+                          <SetValueInput
+                            label={`Duração planejada da série ${setIndex + 1} em minutos`}
+                            value={set.durationMinutes}
+                            min={1}
+                            step={1}
+                            inputMode="numeric"
+                            increments={[-5, 5]}
+                            onChange={(durationMinutes) =>
+                              updateSet(item.id, set.id, { durationMinutes })
+                            }
+                          />
+                          <SetValueInput
+                            label={`Distância planejada da série ${setIndex + 1} em quilômetros`}
+                            value={set.distanceKm}
+                            min={0}
+                            step={0.1}
+                            inputMode="decimal"
+                            increments={[-1, 1]}
+                            onChange={(distanceKm) =>
+                              updateSet(item.id, set.id, { distanceKm })
+                            }
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <SetValueInput
+                            label={`Carga planejada da série ${setIndex + 1} de ${getExerciseName(item.exercise.name)}`}
+                            value={set.weightKg}
+                            min={0}
+                            step={0.5}
+                            inputMode="decimal"
+                            increments={[-10, -5, 5, 10]}
+                            onChange={(weightKg) =>
+                              updateSet(item.id, set.id, { weightKg })
+                            }
+                          />
+                          <SetValueInput
+                            label={`Repetições planejadas da série ${setIndex + 1} de ${getExerciseName(item.exercise.name)}`}
+                            value={set.reps}
+                            min={1}
+                            step={1}
+                            inputMode="numeric"
+                            increments={[-1, 1]}
+                            onChange={(reps) => updateSet(item.id, set.id, { reps })}
+                          />
+                        </>
+                      )}
                       <button
                         type="button"
                         onClick={() => removeSet(item.id, set.id)}

@@ -34,6 +34,13 @@ export interface RegisterRequest {
   password: string;
 }
 
+export interface UpdateProfileRequest {
+  name: string;
+  username: string;
+  profilePictureUrl: string;
+  bio: string;
+}
+
 // Workout Types
 export interface WorkoutPlan {
   id: string;
@@ -49,8 +56,10 @@ export interface WorkoutPlanExercise {
   exerciseId: string;
   exerciseName: string;
   muscleGroup?: string;
+  secondaryMuscleGroups?: string[];
   equipment?: string | null;
   exerciseOrder: number;
+  technique?: WorkoutTechnique;
   sets: WorkoutPlanSet[];
 }
 
@@ -58,7 +67,18 @@ export interface WorkoutPlanSet {
   setOrder: number;
   reps: number;
   weightKg: number;
+  durationMinutes?: number | null;
+  distanceKm?: number | null;
 }
+
+export type WorkoutTechnique =
+  | "NORMAL"
+  | "DROP_SET"
+  | "BI_SET"
+  | "SUPER_SET"
+  | "TRI_SET"
+  | "REST_PAUSE"
+  | "GIANT_SET";
 
 export interface CreateWorkoutPlan {
   name: string;
@@ -70,6 +90,7 @@ export interface Exercise {
   id: string;
   name: string;
   muscleGroup: string;
+  secondaryMuscleGroups?: string[];
   equipment?: string | null;
 }
 
@@ -82,6 +103,9 @@ export interface WorkoutSet {
   weightKg: number;
   rpe?: number;
   isWarmup?: boolean;
+  technique?: WorkoutTechnique;
+  durationMinutes?: number | null;
+  distanceKm?: number | null;
 }
 
 export interface CreateWorkoutSession {
@@ -147,17 +171,28 @@ export interface MealItemResponse {
 }
 
 export interface LogMealRequest {
-  mealType: "BREAKFAST" | "MORNING_SNACK" | "LUNCH" | "AFTERNOON_SNACK" | "PRE_WORKOUT" | "POST_WORKOUT" | "DINNER" | "SUPPER" | "SNACK";
+  mealType: MealType;
   loggedAt?: string;
   photoUrl?: string;
   isPublic?: boolean;
   items: MealItemRequest[];
 }
 
+export type MealType =
+  | "BREAKFAST"
+  | "MORNING_SNACK"
+  | "LUNCH"
+  | "AFTERNOON_SNACK"
+  | "PRE_WORKOUT"
+  | "POST_WORKOUT"
+  | "DINNER"
+  | "SUPPER"
+  | "SNACK";
+
 export interface MealLogResponse {
   id: string;
   userId: string;
-  mealType: string;
+  mealType: MealType;
   loggedAt: string;
   photoUrl?: string;
   isPublic: boolean;
@@ -203,6 +238,7 @@ export interface NutritionGoalRequest {
   age: number;
   heightCm: number;
   activityLevel: NutritionActivityLevel;
+  plannedWorkoutDaysPerWeek: number;
   currentWeightKg: number;
   targetWeightKg?: number;
   targetDate: string;
@@ -214,6 +250,7 @@ export interface NutritionGoal {
   age: number;
   heightCm: number;
   activityLevel: NutritionActivityLevel;
+  plannedWorkoutDaysPerWeek: number;
   startingWeightKg: number;
   currentWeightKg: number;
   targetWeightKg?: number | null;
@@ -242,6 +279,10 @@ export interface NutritionProgress {
   goal?: NutritionGoal | null;
   weightEntries: WeightEntry[];
   dailyIntake: NutritionProgressDay[];
+  maintenanceCalories?: number | null;
+  averageRecordedCalories?: number | null;
+  recordedIntakeDays: number;
+  workoutsLast7Days: number;
 }
 
 export interface SaveWeightEntryRequest {

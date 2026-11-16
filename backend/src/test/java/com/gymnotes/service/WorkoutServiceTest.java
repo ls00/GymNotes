@@ -7,12 +7,14 @@ import com.gymnotes.domain.WorkoutPlanSet;
 import com.gymnotes.domain.WorkoutSession;
 import com.gymnotes.domain.enums.EquipmentType;
 import com.gymnotes.domain.enums.MuscleGroup;
+import com.gymnotes.domain.enums.WorkoutTechnique;
 import com.gymnotes.dto.CreateWorkoutSessionDTO;
 import com.gymnotes.dto.CreateWorkoutPlanDTO;
 import com.gymnotes.dto.ExerciseDTO;
 import com.gymnotes.dto.WorkoutPlanExerciseDTO;
 import com.gymnotes.dto.WorkoutPlanSetDTO;
 import com.gymnotes.dto.WorkoutSetDTO;
+import com.gymnotes.dto.UpdateWorkoutPostDTO;
 import com.gymnotes.repository.ExerciseRepository;
 import com.gymnotes.repository.UserRepository;
 import com.gymnotes.repository.WorkoutPlanRepository;
@@ -66,6 +68,7 @@ class WorkoutServiceTest {
                 .name("Supino reto com barra")
                 .muscleGroup(MuscleGroup.CHEST)
                 .equipment(EquipmentType.BARBELL)
+                .secondaryMuscleGroups(List.of(MuscleGroup.TRICEPS, MuscleGroup.SHOULDERS))
                 .build();
         PageRequest pageable = PageRequest.of(0, 20);
         when(exerciseRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(exercise)));
@@ -76,6 +79,8 @@ class WorkoutServiceTest {
                 .extracting(ExerciseDTO::id, ExerciseDTO::name, ExerciseDTO::muscleGroup)
                 .containsExactly(org.assertj.core.groups.Tuple.tuple(
                         exercise.getId(), exercise.getName(), MuscleGroup.CHEST));
+        assertThat(result.getContent().get(0).secondaryMuscleGroups())
+                .containsExactly(MuscleGroup.TRICEPS, MuscleGroup.SHOULDERS);
         verify(exerciseRepository).findAll(pageable);
     }
 
@@ -110,7 +115,10 @@ class WorkoutServiceTest {
                         8,
                         new BigDecimal("60"),
                         null,
-                        false
+                        false,
+                        WorkoutTechnique.DROP_SET,
+                        20,
+                        new BigDecimal("3.5")
                 )),
                 "data:image/jpeg;base64,ZmFrZS1waG90bw=="
         );
@@ -121,9 +129,39 @@ class WorkoutServiceTest {
         assertThat(saved.sets()).hasSize(1);
         assertThat(saved.sets().get(0).exerciseId()).isEqualTo(exerciseId);
         assertThat(saved.sets().get(0).exerciseName()).isEqualTo("Agachamento livre");
+        assertThat(saved.sets().get(0).technique()).isEqualTo(WorkoutTechnique.DROP_SET);
+        assertThat(saved.sets().get(0).durationMinutes()).isEqualTo(20);
+        assertThat(saved.sets().get(0).distanceKm()).isEqualByComparingTo("3.5");
         assertThat(saved.isPublic()).isFalse();
         assertThat(saved.photoUrl()).isEqualTo("data:image/jpeg;base64,ZmFrZS1waG90bw==");
         verify(workoutSessionRepository).save(any(WorkoutSession.class));
+    }
+
+    @Test
+    void updateArchiveAndDeleteSessionPostsAreScopedToTheOwner() {
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        WorkoutSession session = WorkoutSession.builder()
+                .id(sessionId)
+                .user(User.builder().id(userId).build())
+                .title("Título antigo")
+                .isPublic(true)
+                .sets(List.of())
+                .build();
+        when(workoutSessionRepository.findByIdAndUserIdWithSets(sessionId, userId))
+                .thenReturn(Optional.of(session));
+        when(workoutSessionRepository.save(any(WorkoutSession.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var updated = workoutService.updateSessionPost(
+                userId, sessionId, new UpdateWorkoutPostDTO("Título novo", "Descrição", null));
+        workoutService.archiveSessionPost(userId, sessionId);
+        workoutService.deleteSession(userId, sessionId);
+
+        assertThat(updated.title()).isEqualTo("Título novo");
+        assertThat(updated.notes()).isEqualTo("Descrição");
+        assertThat(session.getIsPublic()).isFalse();
+        verify(workoutSessionRepository).delete(session);
     }
 
     @Test
@@ -153,7 +191,8 @@ class WorkoutServiceTest {
                         List.of(
                                 new WorkoutPlanSetDTO(1, 10, new BigDecimal("40")),
                                 new WorkoutPlanSetDTO(2, 8, new BigDecimal("45"))
-                        )
+                        ),
+                        WorkoutTechnique.BI_SET
                 ))
         );
 
@@ -165,6 +204,7 @@ class WorkoutServiceTest {
             assertThat(plannedExercise.exerciseName()).isEqualTo("Supino reto");
             assertThat(plannedExercise.muscleGroup()).isEqualTo("CHEST");
             assertThat(plannedExercise.equipment()).isEqualTo("BARBELL");
+            assertThat(plannedExercise.technique()).isEqualTo(WorkoutTechnique.BI_SET);
             assertThat(plannedExercise.sets())
                     .extracting(WorkoutPlanSetDTO::reps)
                     .containsExactly(10, 8);

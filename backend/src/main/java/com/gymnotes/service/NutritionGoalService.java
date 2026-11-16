@@ -12,6 +12,7 @@ import com.gymnotes.repository.MealLogRepository;
 import com.gymnotes.repository.NutritionGoalRepository;
 import com.gymnotes.repository.UserRepository;
 import com.gymnotes.repository.WeightEntryRepository;
+import com.gymnotes.repository.WorkoutSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,7 @@ public class NutritionGoalService {
     private final WeightEntryRepository weightEntryRepository;
     private final UserRepository userRepository;
     private final MealLogRepository mealLogRepository;
+    private final WorkoutSessionRepository workoutSessionRepository;
 
     @Transactional(readOnly = true)
     public NutritionGoalResponseDTO getCurrentGoal(UUID userId) {
@@ -65,11 +67,16 @@ public class NutritionGoalService {
                         .startDate(today)
                         .build());
 
+        if (goal.getObjective() != null && goal.getObjective() != request.objective()) {
+            goal.setStartingWeightKg(request.currentWeightKg());
+            goal.setStartDate(today);
+        }
         goal.setObjective(request.objective());
         goal.setBiologicalSex(request.biologicalSex());
         goal.setAge(request.age());
         goal.setHeightCm(request.heightCm());
         goal.setActivityLevel(request.activityLevel());
+        goal.setPlannedWorkoutDaysPerWeek(request.plannedWorkoutDaysPerWeek());
         goal.setTargetWeightKg(request.targetWeightKg());
         goal.setTargetDate(request.targetDate());
 
@@ -128,7 +135,36 @@ public class NutritionGoalService {
                 })
                 .toList();
 
-        return new NutritionProgressDTO(goal, weights, dailyIntake);
+        NutritionGoal savedGoal = nutritionGoalRepository.findByUserId(userId).orElse(null);
+        Integer maintenanceCalories = savedGoal == null ? null : (int) Math.round(
+                maintenanceCalories(
+                        savedGoal,
+                        weightEntryRepository.findFirstByUserIdOrderByMeasuredAtDesc(userId)
+                                .map(WeightEntry::getWeightKg)
+                                .orElse(savedGoal.getStartingWeightKg())
+                                .doubleValue()));
+        List<BigDecimal> recordedCalories = caloriesByDate.entrySet().stream()
+                .filter(entry -> entry.getKey().isBefore(today))
+                .map(Map.Entry::getValue)
+                .toList();
+        Double averageRecordedCalories = recordedCalories.isEmpty() ? null :
+                recordedCalories.stream()
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+                        .divide(BigDecimal.valueOf(recordedCalories.size()), 2, RoundingMode.HALF_UP)
+                        .doubleValue();
+        long workoutsLast7Days = workoutSessionRepository.countByUserIdAndStartedAtBetween(
+                userId,
+                today.minusDays(6).atStartOfDay(ZoneOffset.UTC).toInstant(),
+                today.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant());
+
+        return new NutritionProgressDTO(
+                goal,
+                weights,
+                dailyIntake,
+                maintenanceCalories,
+                averageRecordedCalories,
+                recordedCalories.size(),
+                Math.toIntExact(workoutsLast7Days));
     }
 
     private void validateTarget(CreateNutritionGoalDTO request) {
@@ -162,9 +198,8 @@ public class NutritionGoalService {
                 .orElse(goal.getStartingWeightKg());
         int daysRemaining = Math.max(0, Math.toIntExact(ChronoUnit.DAYS.between(today, goal.getTargetDate())));
         double weight = currentWeight.doubleValue();
-        double bmr = 10 * weight + 6.25 * goal.getHeightCm().doubleValue() - 5 * goal.getAge()
-                + (goal.getBiologicalSex() == BiologicalSex.MALE ? 5 : -161);
-        double maintenanceCalories = bmr * activityMultiplier(goal.getActivityLevel());
+        double bmr = bmr(goal, weight);
+        double maintenanceCalories = maintenanceCalories(goal, weight);
         double maximumAdjustment = maximumCalorieAdjustment(goal, weight, bmr, maintenanceCalories);
         double requiredAdjustment = calculateRequiredAdjustment(goal, weight, Math.max(1, daysRemaining));
         double calorieAdjustment = Math.copySign(
@@ -244,6 +279,15 @@ public class NutritionGoalService {
             case HIGH -> 1.725;
             case VERY_HIGH -> 1.9;
         };
+    }
+
+    private double bmr(NutritionGoal goal, double weight) {
+        return 10 * weight + 6.25 * goal.getHeightCm().doubleValue() - 5 * goal.getAge()
+                + (goal.getBiologicalSex() == BiologicalSex.MALE ? 5 : -161);
+    }
+
+    private double maintenanceCalories(NutritionGoal goal, double weight) {
+        return bmr(goal, weight) * activityMultiplier(goal.getActivityLevel());
     }
 
     private BigDecimal rounded(double value) {

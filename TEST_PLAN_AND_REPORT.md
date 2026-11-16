@@ -19,10 +19,11 @@ O GymNotes é composto por um frontend Next.js/React e uma API Spring Boot, pers
 
 ### Arquitetura e funcionalidades
 
-- **Frontend:** Next.js 16, React 19 e TypeScript; telas de login/cadastro, treino, nutrição e feed. A navegação do dashboard é protegida por token local. Ver [rotas](./frontend/src/app), [hooks](./frontend/src/hooks) e [cliente HTTP](./frontend/src/services/api.ts).
-- **Backend:** Spring Boot 3.5.16 em Java 25; REST, Spring Security/JWT, JPA e PostgreSQL. Flyway mantém três migrações para usuários, relações sociais, treinos, catálogo de exercícios, refeições, catálogo de alimentos e interações.
-- **Treinos:** catálogo de exercícios, criação/listagem de fichas, sessões com séries, histórico e progresso por exercício.
+- **Frontend:** Next.js 16, React 19 e TypeScript; telas de login/cadastro, treino, nutrição, objetivo e feed. A navegação do dashboard é protegida por token local. Ver [rotas](./frontend/src/app), [hooks](./frontend/src/hooks) e [cliente HTTP](./frontend/src/services/api.ts).
+- **Backend:** Spring Boot 3.5.16 em Java 25; REST, Spring Security/JWT, JPA e PostgreSQL. Flyway mantém as migrações de usuários, relações sociais, treinos, catálogos de exercícios e alimentos, refeições e interações.
+- **Treinos:** catálogo de exercícios com grupos musculares secundários, máquinas e cardio; fichas com técnicas de série; sessões com duração/distância de cardio, histórico e progresso por exercício.
 - **Nutrição:** busca e cadastro de alimentos, registro de refeições e resumo diário de calorias/macros.
+- **Objetivo:** progresso de peso ou ciclo de recomposição, frequência de treino planejada, balanço calórico registrado e previsão estimada condicionada à disponibilidade de dados.
 - **Social:** solicitações/respostas de amizade, feed, curtidas e comentários. O backend envia notificações STOMP/WebSocket.
 - **Deploy:** frontend e API em projetos Vercel separados; PostgreSQL de produção no Neon. O teste não escreveu no banco.
 
@@ -75,7 +76,7 @@ Executar os fluxos de escrita em ambiente de teste isolado com PostgreSQL/Flyway
 |---|---|---|---|
 | WEB-01 | Deploy | Abrir o domínio numa sessão anônima; ver o login do GymNotes, sem tela de autenticação da Vercel. | **Passou** |
 | WEB-02 | Navegação protegida | Abrir `/workouts`, `/nutrition` e `/feed` sem token; redirecionar para `/login`. | Pendente |
-| WEB-03 | Navegação autenticada | Com sessão válida, alternar entre Treinos, Nutrição e Feed em desktop e mobile. | Pendente |
+| WEB-03 | Navegação autenticada | Com sessão válida, alternar entre Treinos, Nutrição, Objetivo e Feed em desktop e mobile. | Pendente |
 | AUTH-01 | Cadastro | Cadastrar nome/e-mail/senha válidos; criar conta uma vez, receber tokens e abrir Treinos. | Requer banco de teste |
 | AUTH-02 | Validação | Enviar nome vazio/curto, e-mail inválido e senha menor que 6; receber validação 400 e não persistir. | **Validação inválida passou** |
 | AUTH-03 | Duplicidade | Repetir cadastro com o mesmo e-mail; rejeitar sem duplicar usuário. | Requer banco de teste |
@@ -95,6 +96,8 @@ Executar os fluxos de escrita em ambiente de teste isolado com PostgreSQL/Flyway
 | NUT-03 | Refeições | Registrar cada tipo de refeição com quantidades conhecidas; validar cálculo proporcional de kcal e macros. | Requer banco de teste |
 | NUT-04 | Resumo diário | Conferir soma das refeições, metas/restantes, dia vazio, data explícita e virada UTC. | Requer banco de teste |
 | NUT-05 | Validação | Rejeitar refeição sem itens, quantidade não positiva e alimento inexistente. | Requer banco de teste |
+| GOAL-01 | Objetivo | Definir emagrecer/crescer/definir, frequência semanal planejada, peso e prazo; validar a barra ou ciclo de progresso. | Requer banco de teste |
+| GOAL-02 | Projeção | Conferir manutenção, média de dias registrados, sessões nos últimos 7 dias e projeção após ao menos 7 dias de dados; dias sem refeições não devem entrar como zero. | Requer banco de teste |
 | SOCIAL-01 | Amizades | Solicitar amizade entre duas contas; verificar auto-solicitação, duplicata pendente, rejeição e reenvio. | Requer banco de teste |
 | SOCIAL-02 | Resposta | Aceitar/recusar como destinatário; outro usuário não pode responder; resposta repetida deve falhar. | Requer banco de teste |
 | SOCIAL-03 | Feed | Conferir atividades próprias e de amigos aceitos, ordem, privacidade e ausência de atividade de não amigo. | Requer banco de teste |

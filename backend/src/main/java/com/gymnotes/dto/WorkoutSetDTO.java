@@ -1,6 +1,7 @@
 package com.gymnotes.dto;
 
 import com.gymnotes.domain.WorkoutSet;
+import com.gymnotes.domain.enums.WorkoutTechnique;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
@@ -36,8 +37,29 @@ public record WorkoutSetDTO(
     @DecimalMax(value = "10.0", message = "O RPE máximo é 10.0.")
     BigDecimal rpe,
 
-    Boolean isWarmup
+    Boolean isWarmup,
+
+    WorkoutTechnique technique,
+
+    @PositiveOrZero(message = "A duração deve ser maior ou igual a zero.")
+    Integer durationMinutes,
+
+    @PositiveOrZero(message = "A distância deve ser maior ou igual a zero.")
+    BigDecimal distanceKm
 ) {
+    public WorkoutSetDTO(
+            UUID id,
+            UUID exerciseId,
+            String exerciseName,
+            Integer setOrder,
+            Integer reps,
+            BigDecimal weightKg,
+            BigDecimal rpe,
+            Boolean isWarmup
+    ) {
+        this(id, exerciseId, exerciseName, setOrder, reps, weightKg, rpe, isWarmup, null, null, null);
+    }
+
     public static WorkoutSetDTO fromEntity(WorkoutSet set) {
         if (set == null) {
             return null;
@@ -51,6 +73,9 @@ public record WorkoutSetDTO(
             .weightKg(set.getWeightKg())
             .rpe(set.getRpe())
             .isWarmup(set.getIsWarmup())
+            .technique(set.getTechnique())
+            .durationMinutes(set.getDurationMinutes())
+            .distanceKm(set.getDistanceKm())
             .build();
     }
 }
