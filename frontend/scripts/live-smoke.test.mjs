@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-const webUrl = (process.env.GYMNOTES_WEB_URL || "https://gymnotes-gg.vercel.app").replace(/\/+$/, "");
+const webUrl = (process.env.GYMNOTES_WEB_URL || "https://gymnotes-frontend.vercel.app").replace(/\/+$/, "");
 const apiUrl = (process.env.GYMNOTES_API_URL || "https://gymnotes-api.vercel.app").replace(/\/+$/, "");
 const apiBase = `${apiUrl}/api/v1`;
 const requestTimeout = () => AbortSignal.timeout(60_000);
@@ -20,6 +20,18 @@ test("site login page is available", async () => {
     body.includes("Diário de Treinos"),
     "Vercel access-protection HTML was returned instead of the GymNotes page",
   );
+});
+
+test("objective and profile dashboard routes are deployed", async () => {
+  const [objectiveResponse, profileResponse] = await Promise.all([
+    fetch(`${webUrl}/objective`, { signal: requestTimeout() }),
+    fetch(`${webUrl}/profile`, { signal: requestTimeout() }),
+  ]);
+
+  assert.equal(objectiveResponse.status, 200);
+  assert.equal(profileResponse.status, 200);
+  assert.match(objectiveResponse.headers.get("content-type") || "", /text\/html/);
+  assert.match(profileResponse.headers.get("content-type") || "", /text\/html/);
 });
 
 test("OpenAPI lists the application endpoints", async () => {
