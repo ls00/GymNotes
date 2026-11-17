@@ -25,6 +25,8 @@
 html {
   min-height: 100%;
   background: var(--background);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 /* Base typography with tabular numerals for stable workout/nutrition metrics */
@@ -210,6 +212,20 @@ input:focus-visible {
 @media (min-width: 768px) {
   .dashboard-content {
     padding-bottom: 3rem;
+  }
+}
+
+@media (max-width: 767px) {
+  html {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    /* Override Tailwind text-size utilities to prevent focus zoom on mobile. */
+    font-size: 16px !important;
   }
 }
 
