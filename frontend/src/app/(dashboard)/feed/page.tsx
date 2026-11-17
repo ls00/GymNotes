@@ -500,11 +500,11 @@ export default function FeedPage() {
           <article
             key={post.id}
             id={`activity-${post.id}`}
-            className="rounded-2xl border border-border bg-surface p-5 shadow-sm shadow-black/20 transition-colors hover:border-muted sm:p-6"
+            className="min-w-0 rounded-2xl border border-border bg-surface p-5 shadow-sm shadow-black/20 transition-colors hover:border-muted sm:p-6"
           >
             {/* Post Author Bar */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <div
                   className={cn(
                     "relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border font-mono text-sm font-black tracking-tight",
@@ -532,7 +532,7 @@ export default function FeedPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 <span
                   className={cn(
                     "flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide",
